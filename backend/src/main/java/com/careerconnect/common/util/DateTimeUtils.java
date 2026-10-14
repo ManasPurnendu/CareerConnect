@@ -28,4 +28,8 @@ public final class DateTimeUtils {
     public static String formatIso(LocalDate date) {
         return date != null ? ISO_LOCAL_DATE_FORMATTER.format(date) : null;
     }
+
+    public static Instant toInstant(java.sql.Timestamp timestamp) {
+        return timestamp != null ? timestamp.toInstant() : null;
+    }
 }

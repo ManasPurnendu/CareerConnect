@@ -192,3 +192,195 @@
     "message": null
   }
   ```
+
+---
+
+## 4. Public Discovery Endpoints
+
+### 4.1 Search & Filter Jobs
+* **Method:** `GET`
+* **Path:** `/api/jobs`
+* **Access:** Public
+* **Query Parameters:**
+  * `q` (string, optional): Full-text search matching title, description, or company name.
+  * `location` (string, optional): Location substring match.
+  * `jobType` (enum, optional): `INTERNSHIP`, `FULL_TIME`, `PART_TIME`, `APPRENTICESHIP`, `TRAINEE`.
+  * `experienceLevel` (enum, optional): `INTERNSHIP`, `FRESHER`, `ZERO_TO_ONE_YEARS`, `ONE_TO_TWO_YEARS`.
+  * `workMode` (enum, optional): `ONSITE`, `HYBRID`, `REMOTE`.
+  * `skill` (string, optional): Case-insensitive required skill name match.
+  * `minSalaryLpa` (decimal, optional): Minimum salary threshold.
+  * `sort` (string, optional): `newest` (default), `deadline,asc`, `salary,desc`, `title,asc`.
+  * `page` (int, optional): Zero-based page index (default 0).
+  * `size` (int, optional): Page size (default 20, max 100).
+* **Public Invariant:** Only returns jobs where `status = 'ACTIVE'`, `application_deadline >= CURRENT_DATE`, `deleted_at IS NULL`, and `companies.is_active = TRUE`.
+* **Success Response (`200 OK`):**
+  ```json
+  {
+    "success": true,
+    "data": [
+      {
+        "id": 1,
+        "title": "Software Engineer Intern",
+        "company": {
+          "id": 1,
+          "name": "TechCorp Solutions",
+          "industry": "Technology",
+          "location": "Bengaluru",
+          "website": "https://techcorp.example.com",
+          "companySize": "501-1000",
+          "activeJobCount": 3
+        },
+        "jobType": "INTERNSHIP",
+        "experienceLevel": "FRESHER",
+        "workMode": "HYBRID",
+        "location": "Bengaluru",
+        "salaryMinLpa": 6.00,
+        "salaryMaxLpa": 9.00,
+        "salaryCurrency": "INR",
+        "applicationDeadline": "2026-12-31",
+        "status": "ACTIVE",
+        "skills": [
+          { "id": 1, "name": "Java" },
+          { "id": 2, "name": "Spring Boot" }
+        ],
+        "createdAt": "2026-10-14T10:00:00Z"
+      }
+    ],
+    "pagination": {
+      "page": 0,
+      "size": 20,
+      "totalElements": 1,
+      "totalPages": 1
+    },
+    "message": null
+  }
+  ```
+
+---
+
+### 4.2 Get Job Details
+* **Method:** `GET`
+* **Path:** `/api/jobs/{jobId}`
+* **Access:** Public
+* **Success Response (`200 OK`):**
+  ```json
+  {
+    "success": true,
+    "data": {
+      "id": 1,
+      "title": "Software Engineer Intern",
+      "description": "Develop high throughput backend microservices.",
+      "responsibilities": "Design and build REST APIs using Spring Boot.",
+      "requirements": "Strong problem-solving and OOP fundamentals.",
+      "company": {
+        "id": 1,
+        "name": "TechCorp Solutions",
+        "industry": "Technology",
+        "location": "Bengaluru",
+        "website": "https://techcorp.example.com",
+        "companySize": "501-1000",
+        "activeJobCount": 3
+      },
+      "jobType": "INTERNSHIP",
+      "experienceLevel": "FRESHER",
+      "workMode": "HYBRID",
+      "location": "Bengaluru",
+      "salaryMinLpa": 6.00,
+      "salaryMaxLpa": 9.00,
+      "salaryCurrency": "INR",
+      "applicationDeadline": "2026-12-31",
+      "status": "ACTIVE",
+      "skills": [
+        { "id": 1, "name": "Java" },
+        { "id": 2, "name": "Spring Boot" }
+      ],
+      "createdAt": "2026-10-14T10:00:00Z",
+      "updatedAt": "2026-10-14T10:00:00Z"
+    },
+    "message": null
+  }
+  ```
+* **Potential Errors:**
+  * `404 Not Found` (`JOB_NOT_FOUND`): Nonexistent, DRAFT, CLOSED, ARCHIVED, soft-deleted, past deadline, or deactivated company.
+
+---
+
+### 4.3 Search & Browse Companies
+* **Method:** `GET`
+* **Path:** `/api/companies`
+* **Access:** Public
+* **Query Parameters:**
+  * `q` (string, optional): Search by company name, industry, or location.
+  * `page` (int, optional): Zero-based page index (default 0).
+  * `size` (int, optional): Page size (default 20, max 100).
+* **Public Invariant:** Only returns companies where `is_active = TRUE`.
+* **Success Response (`200 OK`):**
+  ```json
+  {
+    "success": true,
+    "data": [
+      {
+        "id": 1,
+        "name": "TechCorp Solutions",
+        "industry": "Technology",
+        "location": "Bengaluru",
+        "website": "https://techcorp.example.com",
+        "companySize": "501-1000",
+        "activeJobCount": 3
+      }
+    ],
+    "pagination": {
+      "page": 0,
+      "size": 20,
+      "totalElements": 1,
+      "totalPages": 1
+    },
+    "message": null
+  }
+  ```
+
+---
+
+### 4.4 Get Company Details
+* **Method:** `GET`
+* **Path:** `/api/companies/{companyId}`
+* **Access:** Public
+* **Success Response (`200 OK`):**
+  ```json
+  {
+    "success": true,
+    "data": {
+      "id": 1,
+      "name": "TechCorp Solutions",
+      "industry": "Technology",
+      "location": "Bengaluru",
+      "website": "https://techcorp.example.com",
+      "description": "Leading enterprise software and cloud provider.",
+      "companySize": "501-1000",
+      "activeJobCount": 1,
+      "activeJobs": [
+        {
+          "id": 1,
+          "title": "Software Engineer Intern",
+          "company": { ... },
+          "jobType": "INTERNSHIP",
+          "experienceLevel": "FRESHER",
+          "workMode": "HYBRID",
+          "location": "Bengaluru",
+          "salaryMinLpa": 6.00,
+          "salaryMaxLpa": 9.00,
+          "salaryCurrency": "INR",
+          "applicationDeadline": "2026-12-31",
+          "status": "ACTIVE",
+          "skills": [ { "id": 1, "name": "Java" } ],
+          "createdAt": "2026-10-14T10:00:00Z"
+        }
+      ],
+      "createdAt": "2026-10-14T09:00:00Z"
+    },
+    "message": null
+  }
+  ```
+* **Potential Errors:**
+  * `404 Not Found` (`RESOURCE_NOT_FOUND`): Nonexistent company or `is_active = FALSE`.
+

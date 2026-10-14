@@ -66,9 +66,9 @@ public class SecurityConfig {
                         // Public Auth Endpoints
                         .requestMatchers(HttpMethod.POST, "/api/auth/register", "/api/auth/login").permitAll()
 
-                        // Public Discovery Endpoints (Phase 4)
-                        .requestMatchers(HttpMethod.GET, "/api/jobs/**").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/companies/**").permitAll()
+                        // Public Discovery Endpoints (Phase 3)
+                        .requestMatchers(HttpMethod.GET, "/api/jobs", "/api/jobs/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/companies", "/api/companies/**").permitAll()
 
                         // Error dispatch
                         .requestMatchers("/error").permitAll()
