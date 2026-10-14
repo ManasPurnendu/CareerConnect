@@ -407,4 +407,27 @@ public class JobRepository {
 
         return map;
     }
+
+    public boolean existsJobById(Long id) {
+        if (id == null) {
+            return false;
+        }
+        String sql = "SELECT COUNT(*) FROM jobs WHERE id = ? AND deleted_at IS NULL";
+        Integer count = jdbcTemplate.queryForObject(sql, Integer.class, id);
+        return count != null && count > 0;
+    }
+
+    public List<String> findRequiredSkillNamesByJobId(Long jobId) {
+        if (jobId == null) {
+            return Collections.emptyList();
+        }
+        String sql = """
+                SELECT s.name
+                FROM job_skills js
+                JOIN skills s ON js.skill_id = s.id
+                WHERE js.job_id = ?
+                ORDER BY s.name ASC
+                """;
+        return jdbcTemplate.queryForList(sql, String.class, jobId);
+    }
 }

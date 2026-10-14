@@ -2,7 +2,7 @@
 
 **Document:** Backend Implementation Guide  
 **Project:** CareerConnect  
-**Phase:** Phase 4 Complete (Candidate Profile, Education, Skills, Projects, Experience, Resume, Readiness)  
+**Phase:** Phase 5 Complete (Applications, Deterministic Matching, Immutable Snapshots, Lifecycle State Machine)
 **Authority:** `CAREERCONNECT_MASTER_SPECIFICATION.md`  
 
 ---
@@ -155,12 +155,34 @@ MySQL Database (careerconnect_db)
 | `GET` | `/api/auth/me` | Authenticated | None (`Authorization: Bearer <token>`) | `200 OK` (`AuthUserDto`) | `UNAUTHENTICATED`, `FORBIDDEN` |
 | `POST` | `/api/auth/logout` | Authenticated | None (`Authorization: Bearer <token>`) | `204 No Content` | `UNAUTHENTICATED` |
 
+### D. Applications & Matching Endpoints (Phase 5)
+
+| Method | Path | Access | Parameters / Body | Success Response | Error Codes |
+|---|---|---|---|---|---|
+| `GET` | `/api/jobs/{jobId}/match` | Candidate | None | `200 OK` (`JobMatchDto`) | `UNAUTHENTICATED`, `FORBIDDEN`, `JOB_NOT_FOUND` |
+| `POST` | `/api/jobs/{jobId}/applications` | Candidate | `{ coverLetter }` | `201 Created` (`ApplicationResponseDto`) | `VALIDATION_FAILED`, `DUPLICATE_APPLICATION`, `CANDIDATE_PROFILE_INCOMPLETE`, `CANDIDATE_RESUME_REQUIRED`, `JOB_NOT_ACTIVE`, `JOB_DEADLINE_PASSED`, `JOB_NOT_FOUND` |
+| `GET` | `/api/candidate/applications` | Candidate | `page, size` | `200 OK` (Paginated `ApplicationResponseDto[]`) | `UNAUTHENTICATED`, `FORBIDDEN` |
+| `GET` | `/api/candidate/applications/{id}` | Candidate | None | `200 OK` (`ApplicationResponseDto`) | `UNAUTHENTICATED`, `FORBIDDEN`, `RESOURCE_NOT_FOUND` |
+| `PATCH` | `/api/candidate/applications/{id}/withdraw` | Candidate | None | `200 OK` (`ApplicationResponseDto`) | `UNAUTHENTICATED`, `FORBIDDEN`, `RESOURCE_NOT_FOUND`, `INVALID_STATUS_TRANSITION` |
+
 ---
 
 ## 4. Academic Traceability & Automated Testing
 
-All **144 automated tests** in the test suite verify genuine application functionality:
+All **300 automated tests** in the test suite verify genuine application functionality:
 
+* **Applications & Deterministic Matching (Phase 5 — 156 tests):**
+  * `ApplicationStatusTest` (40 tests): Exhaustive testing of the authoritative state machine (valid transitions, invalid transitions, terminal states `SELECTED`, `REJECTED`, `WITHDRAWN`, same-state transitions, and null transitions).
+  * `ApplicationSecurityAndOwnershipTest` (22 tests): Token authentication, role restrictions, candidate ID injection protection across queries/bodies/headers, and cross-candidate isolation.
+  * `MatchServiceTest` (19 tests): Deterministic matching algorithms, case normalization, whitespace trimming, duplicate skill handling, integer rounding ratios (50%, 67%, 75%, 33%, 17%, 83%), and null safety.
+  * `ApplicationSubmissionControllerTest` (17 tests): End-to-end submission testing, profile readiness gating, inactive/expired job rejection, cover letter length validation, duplicate prevention, and initial status history creation.
+  * `CandidateApplicationQueryControllerTest` (14 tests): Candidate-scoped application listing, detail retrieval, pagination boundary clamping (default 20, max 100), deterministic `applied_at DESC, id DESC` ordering, and foreign application 404 isolation.
+  * `CandidateApplicationWithdrawalControllerTest` (13 tests): Candidate self-service withdrawal, state machine enforcement, append-only status history auditing, and redundant withdrawal prevention.
+  * `JobMatchControllerTest` (10 tests): REST integration testing of `/api/jobs/{id}/match`, candidate identity resolution from security context, recruiter prohibition (403), and unauthenticated rejection (401).
+  * `ApplicationSnapshotImmutabilityTest` (9 tests): Verifies that post-submission candidate mutations (name, headline, bio, education, skills, projects, experience, resume) do NOT alter the historical application snapshots.
+  * `CandidateSnapshotSerializationTest` (8 tests): Jackson serialization and deserialization round-trip fidelity, null preservation, escaped quotes/newlines/unicode handling, and forward-compatible tolerance of unknown JSON fields.
+  * `ApplicationComprehensiveWorkflowTest` (4 tests): Multi-step candidate application lifecycle, 0% match application allowance, duplicate application blocking after withdrawal, pagination edge cases, and canonical error envelope validation.
+  * `ApplicationTransactionTest` (2 tests): `@Transactional` rollback verification for application submission and withdrawal (simulated audit history failure causes complete rollback; zero orphaned application or dangling audit rows).
 * **Candidate Profile & Resources (Phase 4 — 95 tests):**
   * `CandidateProfileControllerTest` (9 tests): Basic profile GET, PUT, persistence, blank name validation, recruiter 403, and unauthenticated 401.
   * `CandidateEducationControllerTest` (9 tests): Education CRUD, year validations, sort ordering, ownership isolation, and 404 on foreign records.
@@ -183,5 +205,3 @@ All **144 automated tests** in the test suite verify genuine application functio
   * `PageRequestDtoTest` (3 tests): Default page/size, offset calculation, and upper bound capping (max 100).
   * `HealthControllerTest` (1 test): Live end-to-end Three-Tier request flow and database connectivity check.
   * `CareerConnectApplicationTests` (1 test): Spring context bootstrapping with Flyway migration execution.
-
-

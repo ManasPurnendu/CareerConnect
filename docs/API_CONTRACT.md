@@ -494,4 +494,179 @@ All endpoints under `/api/candidate/**` require an authenticated session with `R
 * `GET /api/candidate/resume` (`200 OK`): retrieves current resume metadata; returns `404 RESOURCE_NOT_FOUND` if none.
 * `DELETE /api/candidate/resume` (`204 No Content`): marks non-current / deletes DB record and deletes physical file from disk. Subsequent `GET` returns `404`.
 
+---
 
+## 5. Phase 5 — Applications & Matching Endpoints
+
+### 5.1 Deterministic Skill Matching
+* **Method:** `GET`
+* **Path:** `/api/jobs/{jobId}/match`
+* **Access:** `ROLE_CANDIDATE` (authenticated candidate)
+* **Description:** Performs a deterministic match between the candidate's skills and the job's required skills. Candidate identity is extracted strictly from the JWT authentication context.
+* **Algorithm:**
+  * Normalization: `lower(trim(skill))`
+  * Deduplication: duplicates across candidate or job skills are counted exactly once.
+  * Formula: $\text{percentage} = \text{round}(100 \times \frac{\text{matchedRequired}}{\text{totalRequired}})$
+  * Zero required skills $\rightarrow$ $100\%$ match.
+  * Zero candidate skills with requirements $\rightarrow$ $0\%$ match.
+  * Empty candidate and job skills $\rightarrow$ $100\%$ match.
+  * Additional candidate skills are captured in `additionalSkills` and do not inflate the score beyond $100\%$.
+  * Informational preview only; a $0\%$ match never blocks application submission.
+* **Success Response (`200 OK`):**
+  ```json
+  {
+    "success": true,
+    "data": {
+      "percentage": 67,
+      "matchedSkills": ["Java", "SQL"],
+      "missingSkills": ["Spring Boot"],
+      "additionalSkills": ["Python"]
+    },
+    "message": null
+  }
+  ```
+* **Potential Errors:** `401 UNAUTHENTICATED`, `403 FORBIDDEN` (recruiters), `404 JOB_NOT_FOUND`.
+
+### 5.2 Application Submission
+* **Method:** `POST`
+* **Path:** `/api/jobs/{jobId}/applications`
+* **Access:** `ROLE_CANDIDATE`
+* **Request Body:**
+  ```json
+  {
+    "coverLetter": "Optional cover letter up to 5000 characters."
+  }
+  ```
+* **Business Invariants:**
+  1. Job must exist, not be soft-deleted, have status `ACTIVE`, and have application deadline on or after the current UTC date.
+  2. Candidate must satisfy profile readiness: completed profile, at least one education record, at least one skill, and an active resume.
+  3. Candidate can submit at most one application per job across the system lifetime (`uk_application_candidate_job`). Duplicate applications return `409 DUPLICATE_APPLICATION`.
+  4. Submission atomically captures immutable `candidate_snapshot` and `resume_snapshot`.
+  5. Initial application status is `APPLIED`.
+  6. Atomically creates initial append-only status history row with `from_status = null` and `to_status = APPLIED`.
+* **Success Response (`201 Created`):**
+  ```json
+  {
+    "success": true,
+    "data": {
+      "applicationId": 1,
+      "jobId": 3,
+      "candidateId": 7,
+      "status": "APPLIED",
+      "coverLetter": "Optional cover letter up to 5000 characters.",
+      "appliedAt": "2026-10-14T21:35:49.390Z"
+    },
+    "message": null
+  }
+  ```
+* **Potential Errors:** `400 VALIDATION_FAILED`, `401 UNAUTHENTICATED`, `403 FORBIDDEN`, `404 JOB_NOT_FOUND`, `409 DUPLICATE_APPLICATION`, `422 CANDIDATE_PROFILE_INCOMPLETE`, `422 CANDIDATE_RESUME_REQUIRED`, `422 JOB_NOT_ACTIVE`, `422 JOB_DEADLINE_PASSED`.
+
+### 5.3 Candidate Application List
+* **Method:** `GET`
+* **Path:** `/api/candidate/applications`
+* **Access:** `ROLE_CANDIDATE`
+* **Query Parameters:** `page` (default 0), `size` (default 20, max 100).
+* **Ordering:** Deterministic `applied_at DESC, id DESC`.
+* **Description:** Returns a paginated collection of the authenticated candidate's applications. Cross-candidate applications are strictly filtered out by SQL WHERE clause.
+* **Success Response (`200 OK`):**
+  ```json
+  {
+    "success": true,
+    "data": [
+      {
+        "applicationId": 1,
+        "jobId": 3,
+        "candidateId": 7,
+        "status": "APPLIED",
+        "coverLetter": "...",
+        "appliedAt": "2026-10-14T21:35:49.390Z",
+        "jobTitle": "SQL Data Analyst",
+        "companyName": "TechNova Solutions",
+        "candidateSnapshot": { ... },
+        "resumeSnapshot": { ... }
+      }
+    ],
+    "pagination": {
+      "page": 0,
+      "size": 20,
+      "totalElements": 1,
+      "totalPages": 1
+    },
+    "message": null
+  }
+  ```
+* **Potential Errors:** `401 UNAUTHENTICATED`, `403 FORBIDDEN`.
+
+### 5.4 Candidate Application Detail
+* **Method:** `GET`
+* **Path:** `/api/candidate/applications/{applicationId}`
+* **Access:** `ROLE_CANDIDATE`
+* **Description:** Retrieves complete application details including frozen snapshots, job title, company name, and full chronological status history.
+* **Success Response (`200 OK`):**
+  ```json
+  {
+    "success": true,
+    "data": {
+      "applicationId": 1,
+      "jobId": 3,
+      "candidateId": 7,
+      "status": "APPLIED",
+      "coverLetter": "...",
+      "appliedAt": "2026-10-14T21:35:49.390Z",
+      "jobTitle": "SQL Data Analyst",
+      "companyName": "TechNova Solutions",
+      "candidateSnapshot": {
+        "candidateId": 7,
+        "fullName": "Alice Johnson",
+        "email": "alice@example.com",
+        "headline": "Full Stack Engineer",
+        "location": "Bengaluru, India",
+        "summary": "Experienced full stack software engineer.",
+        "education": [ ... ],
+        "skills": ["Java"],
+        "projects": [ ... ],
+        "experience": [ ... ]
+      },
+      "resumeSnapshot": {
+        "id": 3,
+        "originalFilename": "alice_resume.pdf",
+        "storageKey": "2d3ccc64-a713-4834-a5dc-702396e4be02.pdf",
+        "contentType": "application/pdf",
+        "sizeBytes": 50
+      },
+      "statusHistory": [
+        {
+          "id": 1,
+          "applicationId": 1,
+          "toStatus": "APPLIED",
+          "changedByUserId": 9,
+          "createdAt": "2026-10-14T21:35:49.390Z"
+        }
+      ]
+    },
+    "message": null
+  }
+  ```
+* **Potential Errors:** `401 UNAUTHENTICATED`, `403 FORBIDDEN`, `404 RESOURCE_NOT_FOUND` (if nonexistent or owned by another candidate).
+
+### 5.5 Candidate Application Withdrawal
+* **Method:** `PATCH`
+* **Path:** `/api/candidate/applications/{applicationId}/withdraw`
+* **Access:** `ROLE_CANDIDATE`
+* **Description:** Transitions an application to `WITHDRAWN` status. Allowed only from non-terminal states (`APPLIED`, `UNDER_REVIEW`, `SHORTLISTED`, `INTERVIEW`).
+* **Success Response (`200 OK`):**
+  ```json
+  {
+    "success": true,
+    "data": {
+      "applicationId": 1,
+      "jobId": 3,
+      "candidateId": 7,
+      "status": "WITHDRAWN",
+      "coverLetter": "...",
+      "appliedAt": "2026-10-14T21:35:49.390Z"
+    },
+    "message": null
+  }
+  ```
+* **Potential Errors:** `401 UNAUTHENTICATED`, `403 FORBIDDEN`, `404 RESOURCE_NOT_FOUND` (if foreign or nonexistent), `422 INVALID_STATUS_TRANSITION` (if already withdrawn or terminal).

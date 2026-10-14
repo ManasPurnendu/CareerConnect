@@ -66,6 +66,10 @@ public class SecurityConfig {
                         // Public Auth Endpoints
                         .requestMatchers(HttpMethod.POST, "/api/auth/register", "/api/auth/login").permitAll()
 
+                        // Candidate Protected Job Endpoints (Phase 5)
+                        .requestMatchers(HttpMethod.GET, "/api/jobs/*/match").hasRole("CANDIDATE")
+                        .requestMatchers(HttpMethod.POST, "/api/jobs/*/applications").hasRole("CANDIDATE")
+
                         // Public Discovery Endpoints (Phase 3)
                         .requestMatchers(HttpMethod.GET, "/api/jobs", "/api/jobs/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/companies", "/api/companies/**").permitAll()
@@ -73,7 +77,7 @@ public class SecurityConfig {
                         // Error dispatch
                         .requestMatchers("/error").permitAll()
 
-                        // Candidate Protected Endpoints (Phase 4)
+                        // Candidate Protected Endpoints (Phase 4 & 5)
                         .requestMatchers("/api/candidate/**").hasRole("CANDIDATE")
 
                         // All other endpoints require authentication
