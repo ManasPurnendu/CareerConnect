@@ -42,6 +42,7 @@ class JobControllerTest {
 
     @BeforeEach
     void setUp() {
+        jdbcTemplate.execute("DELETE FROM candidate_skills");
         jdbcTemplate.execute("DELETE FROM job_skills");
         jdbcTemplate.execute("DELETE FROM jobs");
         jdbcTemplate.execute("DELETE FROM skills");

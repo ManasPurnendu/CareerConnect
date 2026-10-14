@@ -73,6 +73,9 @@ public class SecurityConfig {
                         // Error dispatch
                         .requestMatchers("/error").permitAll()
 
+                        // Candidate Protected Endpoints (Phase 4)
+                        .requestMatchers("/api/candidate/**").hasRole("CANDIDATE")
+
                         // All other endpoints require authentication
                         .anyRequest().authenticated()
                 )

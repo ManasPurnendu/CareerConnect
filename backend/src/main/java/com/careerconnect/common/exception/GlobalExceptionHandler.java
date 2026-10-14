@@ -14,6 +14,10 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.springframework.web.bind.MissingServletRequestParameterException;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
+import org.springframework.web.multipart.MultipartException;
+import org.springframework.web.multipart.support.MissingServletRequestPartException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import java.util.stream.Collectors;
@@ -96,6 +100,27 @@ public class GlobalExceptionHandler {
         log.debug("Resource not found: {}", ex.getResourcePath());
         ApiErrorResponse error = ApiErrorResponse.of("Requested resource not found.", ErrorCode.RESOURCE_NOT_FOUND.getCode());
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
+    }
+
+    @ExceptionHandler(MaxUploadSizeExceededException.class)
+    public ResponseEntity<ApiErrorResponse> handleMaxUploadSizeExceeded(MaxUploadSizeExceededException ex) {
+        log.warn("Max upload size exceeded: {}", ex.getMessage());
+        ApiErrorResponse error = ApiErrorResponse.of("File size exceeds maximum allowed size.", ErrorCode.RESUME_TOO_LARGE.getCode());
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
+    }
+
+    @ExceptionHandler({MissingServletRequestPartException.class, MissingServletRequestParameterException.class})
+    public ResponseEntity<ApiErrorResponse> handleMissingRequestPart(Exception ex) {
+        log.warn("Missing request part or parameter: {}", ex.getMessage());
+        ApiErrorResponse error = ApiErrorResponse.of(ex.getMessage(), ErrorCode.VALIDATION_FAILED.getCode());
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
+    }
+
+    @ExceptionHandler(MultipartException.class)
+    public ResponseEntity<ApiErrorResponse> handleMultipartException(MultipartException ex) {
+        log.warn("Multipart processing failed: {}", ex.getMessage());
+        ApiErrorResponse error = ApiErrorResponse.of("Invalid multipart request: " + ex.getMessage(), ErrorCode.VALIDATION_FAILED.getCode());
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
     }
 
     @ExceptionHandler(Exception.class)
