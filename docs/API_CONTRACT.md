@@ -2,7 +2,7 @@
 
 **Document:** API Contract Specification  
 **Project:** CareerConnect  
-**Phase:** Phase 2 Complete  
+**Phase:** Phase 4 Complete (Candidate Profile, Resources & Readiness)  
 **Base URL:** `http://localhost:8080/api`  
 **Envelope Policy:** Canonical JSON Envelope  
 
@@ -384,4 +384,114 @@
   ```
 * **Potential Errors:**
   * `404 Not Found` (`RESOURCE_NOT_FOUND`): Nonexistent company or `is_active = FALSE`.
+
+---
+
+## 4. Candidate Profile & Resource Endpoints (Phase 4)
+
+All endpoints under `/api/candidate/**` require an authenticated session with `ROLE_CANDIDATE`. Candidate identity is resolved strictly from token claims via `SecurityUtils.getRequiredCandidateId()`.
+
+### 4.1 Get Profile
+* **Method:** `GET`
+* **Path:** `/api/candidate/profile`
+* **Access:** `ROLE_CANDIDATE`
+* **Success Response (`200 OK`):**
+  ```json
+  {
+    "success": true,
+    "data": {
+      "id": 1,
+      "fullName": "Jane Doe",
+      "headline": "Full Stack Engineer",
+      "location": "Bengaluru, India",
+      "summary": "Specialized in distributed systems and Spring Boot."
+    },
+    "message": null
+  }
+  ```
+* **Potential Errors:** `401 UNAUTHENTICATED`, `403 FORBIDDEN`, `404 RESOURCE_NOT_FOUND`.
+
+### 4.2 Update Profile
+* **Method:** `PUT`
+* **Path:** `/api/candidate/profile`
+* **Access:** `ROLE_CANDIDATE`
+* **Request Body:**
+  ```json
+  {
+    "fullName": "Jane Doe",
+    "headline": "Lead Systems Architect",
+    "location": "Bengaluru, India",
+    "summary": "Updated summary text."
+  }
+  ```
+* **Success Response (`200 OK`):**
+  ```json
+  {
+    "success": true,
+    "data": {
+      "id": 1,
+      "fullName": "Jane Doe",
+      "headline": "Lead Systems Architect",
+      "location": "Bengaluru, India",
+      "summary": "Updated summary text."
+    },
+    "message": "Profile updated successfully"
+  }
+  ```
+* **Potential Errors:** `400 Bad Request` (`VALIDATION_FAILED` on blank `fullName`), `401 UNAUTHENTICATED`, `403 FORBIDDEN`.
+
+### 4.3 Profile Readiness
+* **Method:** `GET`
+* **Path:** `/api/candidate/profile/readiness`
+* **Access:** `ROLE_CANDIDATE`
+* **Success Response (`200 OK`):**
+  ```json
+  {
+    "success": true,
+    "data": {
+      "readyToApply": true,
+      "profileComplete": true,
+      "hasEducation": true,
+      "hasSkills": true,
+      "hasResume": true,
+      "missingRequirements": []
+    },
+    "message": null
+  }
+  ```
+* **Deterministic Missing Requirements:** `["PROFILE", "EDUCATION", "SKILLS", "RESUME"]`.
+
+### 4.4 Education CRUD
+* `POST /api/candidate/education` (`201 Created`):
+  * Request: `{ "institution": "MIT", "degree": "B.S.", "fieldOfStudy": "Computer Science", "startYear": 2018, "endYear": 2022, "grade": "4.0", "sortOrder": 1 }`
+  * Validation: startYear/endYear in [1900, 2100], `endYear >= startYear`.
+* `PUT /api/candidate/education/{educationId}` (`200 OK`): updates record; returns `404 RESOURCE_NOT_FOUND` on foreign record.
+* `DELETE /api/candidate/education/{educationId}` (`204 No Content`): deletes record; returns `404 RESOURCE_NOT_FOUND` on foreign record.
+
+### 4.5 Skills Management
+* `GET /api/candidate/skills` (`200 OK`): returns `CandidateSkillDto[]` sorted alphabetically by name.
+* `POST /api/candidate/skills` (`201 Created`): `{ "name": "Java" }`. Skill names normalized to lowercase in global `skills` table; duplicate assignments return `409 CONFLICT`.
+* `DELETE /api/candidate/skills/{skillId}` (`204 No Content`): removes mapping from `candidate_skills`; foreign deletions return `404 RESOURCE_NOT_FOUND`. Global `skills` definition is preserved.
+
+### 4.6 Projects CRUD
+* `POST /api/candidate/projects` (`201 Created`): `{ "title": "Portfolio Site", "description": "Personal project", "projectUrl": "https://example.com", "sortOrder": 1 }`.
+* `PUT /api/candidate/projects/{projectId}` (`200 OK`): updates project; cross-candidate returns `404 RESOURCE_NOT_FOUND`.
+* `DELETE /api/candidate/projects/{projectId}` (`204 No Content`): deletes project; cross-candidate returns `404 RESOURCE_NOT_FOUND`.
+
+### 4.7 Experience CRUD
+* `POST /api/candidate/experience` (`201 Created`): `{ "companyName": "Acme", "roleTitle": "Software Engineer", "startDate": "2022-01-01", "endDate": "2023-12-31", "isCurrent": false, "description": "...", "sortOrder": 1 }`.
+  * Date Invariants: `startDate` required; past experience requires `endDate`; `endDate >= startDate`; current experience stores `endDate = null`.
+* `PUT /api/candidate/experience/{experienceId}` (`200 OK`): updates record; cross-candidate returns `404 RESOURCE_NOT_FOUND`.
+* `DELETE /api/candidate/experience/{experienceId}` (`204 No Content`): deletes record; cross-candidate returns `404 RESOURCE_NOT_FOUND`.
+
+### 4.8 Resume Management
+* `POST /api/candidate/resume` (`201 Created`):
+  * Headers: `Content-Type: multipart/form-data`
+  * Part: `file` (PDF, max 5 MiB)
+  * Validates: non-empty, `application/pdf` MIME type, `%PDF-` magic-byte header.
+  * Storage: UUID key `<uuid>.pdf` in private directory; replaces previous resume and deletes old physical file.
+  * Response: `{ "id": 1, "originalFilename": "resume.pdf", "contentType": "application/pdf", "sizeBytes": 12345, "isCurrent": true, "createdAt": "...", "updatedAt": "..." }`.
+* `GET /api/candidate/resume` (`200 OK`): retrieves current resume metadata; returns `404 RESOURCE_NOT_FOUND` if none.
+* `DELETE /api/candidate/resume` (`204 No Content`): marks non-current / deletes DB record and deletes physical file from disk. Subsequent `GET` returns `404`.
+
 

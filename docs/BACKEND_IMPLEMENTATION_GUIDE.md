@@ -2,14 +2,14 @@
 
 **Document:** Backend Implementation Guide  
 **Project:** CareerConnect  
-**Phase:** Phase 3 Complete (Public Discovery & Jobs, Auth & Security)  
+**Phase:** Phase 4 Complete (Candidate Profile, Education, Skills, Projects, Experience, Resume, Readiness)  
 **Authority:** `CAREERCONNECT_MASTER_SPECIFICATION.md`  
 
 ---
 
 ## 1. Quick Start & Prerequisites
 
-* **Runtime:** Java 21 LTS.
+* **Runtime:** Java 21 LTS (or higher).
 * **Database:** MySQL 8.0+ running on `localhost:3306`.
 * **Build Tool:** Apache Maven Wrapper (`./mvnw`).
 
@@ -33,7 +33,7 @@
          password: YOUR_LOCAL_MYSQL_PASSWORD
      ```
 
-3. **Run Automated Test Suite (All 49 Tests):**
+3. **Run Automated Test Suite (All 144 Tests):**
    ```bash
    ./mvnw clean test
    ```
@@ -61,6 +61,12 @@ React Client (Vite)
        | REST API (HTTP / JSON)
        v
 Presentation Layer
+├── CandidateProfileController (GET/PUT /api/candidate/profile, GET /api/candidate/profile/readiness)
+├── CandidateEducationController (POST, PUT, DELETE /api/candidate/education)
+├── CandidateSkillController (GET, POST, DELETE /api/candidate/skills)
+├── CandidateProjectController (POST, PUT, DELETE /api/candidate/projects)
+├── CandidateExperienceController (POST, PUT, DELETE /api/candidate/experience)
+├── CandidateResumeController (POST, GET, DELETE /api/candidate/resume)
 ├── JobController (GET /api/jobs, GET /api/jobs/{jobId})
 ├── CompanyController (GET /api/companies, GET /api/companies/{companyId})
 ├── AuthController (POST /api/auth/register, POST /api/auth/login, GET /api/auth/me, POST /api/auth/logout)
@@ -71,6 +77,13 @@ Presentation Layer
        | Validated DTOs & Domain Models
        v
 Business Service Layer
+├── CandidateProfileService (Basic profile retrieval and updates)
+├── CandidateProfileReadinessService (Deterministic application readiness calculation)
+├── CandidateEducationService (Education lifecycle and academic year validation)
+├── CandidateSkillService (Skill assignment, case-insensitive normalization, duplicate prevention)
+├── CandidateProjectService (Portfolio project CRUD with ownership enforcement)
+├── CandidateExperienceService (Work experience management with current/end-date invariants)
+├── CandidateResumeService (PDF validation, magic-byte inspection, UUID storage, cleanup)
 ├── JobService (Public job search, filtering, sorting, zero-based pagination, and active-status invariants)
 ├── CompanyService (Public company discovery, active status invariants, active job aggregation)
 ├── AuthService (Transactional user registration, role provisioning, credential verification, JWT issuance)
@@ -80,6 +93,12 @@ Business Service Layer
        | Parameterized SQL & Explicit RowMappers
        v
 Data Access Layer (JdbcTemplate - Zero ORM)
+├── CandidateProfileRepository (candidates table)
+├── CandidateEducationRepository (education table)
+├── CandidateSkillRepository (skills, candidate_skills tables)
+├── CandidateProjectRepository (projects table)
+├── CandidateExperienceRepository (experience table)
+├── CandidateResumeRepository (resumes table)
 ├── JobRepository (jobs, job_skills, skills - parameterized SQL with batch skill loading)
 ├── CompanyRepository (companies - parameterized SQL with active job count subqueries)
 ├── UserRepository (users table)
@@ -95,7 +114,30 @@ MySQL Database (careerconnect_db)
 
 ## 3. Implemented Endpoints Summary
 
-### A. Public Discovery Endpoints (Phase 3)
+### A. Candidate Profile Endpoints (Phase 4)
+
+| Method | Path | Access | Request / Body | Success Response | Error Codes |
+|---|---|---|---|---|---|
+| `GET` | `/api/candidate/profile` | Candidate | None | `200 OK` (`CandidateProfileResponse`) | `UNAUTHENTICATED`, `FORBIDDEN`, `RESOURCE_NOT_FOUND` |
+| `PUT` | `/api/candidate/profile` | Candidate | `{ fullName, headline, location, summary }` | `200 OK` (`CandidateProfileResponse`) | `VALIDATION_FAILED`, `UNAUTHENTICATED`, `FORBIDDEN` |
+| `GET` | `/api/candidate/profile/readiness` | Candidate | None | `200 OK` (`ProfileReadinessDto`) | `UNAUTHENTICATED`, `FORBIDDEN` |
+| `POST` | `/api/candidate/education` | Candidate | `{ institution, degree, fieldOfStudy, startYear, endYear, grade, sortOrder }` | `201 Created` (`EducationDto`) | `VALIDATION_FAILED`, `UNAUTHENTICATED`, `FORBIDDEN` |
+| `PUT` | `/api/candidate/education/{id}` | Candidate | `{ institution, degree, fieldOfStudy, startYear, endYear, grade, sortOrder }` | `200 OK` (`EducationDto`) | `VALIDATION_FAILED`, `RESOURCE_NOT_FOUND` |
+| `DELETE` | `/api/candidate/education/{id}` | Candidate | None | `204 No Content` | `RESOURCE_NOT_FOUND`, `UNAUTHENTICATED` |
+| `GET` | `/api/candidate/skills` | Candidate | None | `200 OK` (`CandidateSkillDto[]`) | `UNAUTHENTICATED`, `FORBIDDEN` |
+| `POST` | `/api/candidate/skills` | Candidate | `{ name }` | `201 Created` (`CandidateSkillDto`) | `VALIDATION_FAILED`, `CONFLICT` |
+| `DELETE` | `/api/candidate/skills/{id}` | Candidate | None | `204 No Content` | `RESOURCE_NOT_FOUND`, `UNAUTHENTICATED` |
+| `POST` | `/api/candidate/projects` | Candidate | `{ title, description, projectUrl, sortOrder }` | `201 Created` (`ProjectDto`) | `VALIDATION_FAILED`, `UNAUTHENTICATED` |
+| `PUT` | `/api/candidate/projects/{id}` | Candidate | `{ title, description, projectUrl, sortOrder }` | `200 OK` (`ProjectDto`) | `VALIDATION_FAILED`, `RESOURCE_NOT_FOUND` |
+| `DELETE` | `/api/candidate/projects/{id}` | Candidate | None | `204 No Content` | `RESOURCE_NOT_FOUND`, `UNAUTHENTICATED` |
+| `POST` | `/api/candidate/experience` | Candidate | `{ companyName, roleTitle, startDate, endDate, isCurrent, description, sortOrder }` | `201 Created` (`ExperienceDto`) | `VALIDATION_FAILED`, `UNAUTHENTICATED` |
+| `PUT` | `/api/candidate/experience/{id}` | Candidate | `{ companyName, roleTitle, startDate, endDate, isCurrent, description, sortOrder }` | `200 OK` (`ExperienceDto`) | `VALIDATION_FAILED`, `RESOURCE_NOT_FOUND` |
+| `DELETE` | `/api/candidate/experience/{id}` | Candidate | None | `204 No Content` | `RESOURCE_NOT_FOUND`, `UNAUTHENTICATED` |
+| `POST` | `/api/candidate/resume` | Candidate | Multipart `file` (PDF, max 5 MiB) | `201 Created` (`ResumeResponse`) | `CANDIDATE_RESUME_REQUIRED`, `RESUME_INVALID_TYPE`, `RESUME_TOO_LARGE` |
+| `GET` | `/api/candidate/resume` | Candidate | None | `200 OK` (`ResumeResponse`) | `RESOURCE_NOT_FOUND`, `UNAUTHENTICATED` |
+| `DELETE` | `/api/candidate/resume` | Candidate | None | `204 No Content` | `RESOURCE_NOT_FOUND`, `UNAUTHENTICATED` |
+
+### B. Public Discovery Endpoints (Phase 3)
 
 | Method | Path | Access | Query Parameters | Success Response | Error Codes |
 |---|---|---|---|---|---|
@@ -104,7 +146,7 @@ MySQL Database (careerconnect_db)
 | `GET` | `/api/companies` | Public | `q, page, size` | `200 OK` (Paginated `CompanySummaryDto[]`) | `VALIDATION_FAILED` |
 | `GET` | `/api/companies/{id}` | Public | None | `200 OK` (`CompanyDetailDto` with `activeJobs`) | `RESOURCE_NOT_FOUND` |
 
-### B. Authentication Module Endpoints (Phase 2)
+### C. Authentication Module Endpoints (Phase 2)
 
 | Method | Path | Access | Request Body | Success Response | Error Codes |
 |---|---|---|---|---|---|
@@ -117,15 +159,29 @@ MySQL Database (careerconnect_db)
 
 ## 4. Academic Traceability & Automated Testing
 
-All 49 automated tests in the test suite verify genuine application functionality:
+All **144 automated tests** in the test suite verify genuine application functionality:
 
-* `JobControllerTest` (13 tests): Public active job pagination, search filtering (`q`), location filtering, job type filtering, experience level filtering, work mode filtering, required skill filtering, minimum salary threshold filtering, deadline sorting (`asc`), salary sorting (`desc`), complete job detail retrieval with nested skills/company, strict 404 rejection for non-public jobs (`DRAFT`, `CLOSED`, `ARCHIVED`, `EXPIRED`, `DELETED`, `INACTIVE_COMPANY`), and 404 on nonexistent job ID.
-* `CompanyControllerTest` (6 tests): Active company pagination, keyword search, accurate active job counting, complete company detail with nested active jobs, strict 404 exclusion on inactive company direct access, and 404 on nonexistent company ID.
-* `AuthControllerTest` (14 tests): Candidate registration, recruiter registration, admin self-registration rejection, duplicate email handling (case-insensitive), email format validation, password length validation, valid/invalid login, token verification, `/auth/me` protected retrieval, and 204 logout.
-* `JwtServiceTest` (4 tests): Cryptographic secret key enforcement, claim extraction, expiration timestamping, and tampered token rejection.
-* `GlobalExceptionHandlerTest` (4 tests): Verification of canonical `ApiErrorResponse` format and accurate HTTP status code mapping (400, 404, 409, 422).
-* `ApiResponseContractTest` (3 tests): Strict conformity of single-item and paginated collection envelopes with the Master Specification.
-* `PageRequestDtoTest` (3 tests): Default page/size, offset calculation, and upper bound capping (max 100).
-* `HealthControllerTest` (1 test): Live end-to-end Three-Tier request flow and database connectivity check.
-* `CareerConnectApplicationTests` (1 test): Spring context bootstrapping with Flyway migration execution.
+* **Candidate Profile & Resources (Phase 4 — 95 tests):**
+  * `CandidateProfileControllerTest` (9 tests): Basic profile GET, PUT, persistence, blank name validation, recruiter 403, and unauthenticated 401.
+  * `CandidateEducationControllerTest` (9 tests): Education CRUD, year validations, sort ordering, ownership isolation, and 404 on foreign records.
+  * `CandidateSkillControllerTest` (9 tests): Skill assignment, lowercase normalization, duplicate prevention (409 CONFLICT), listing, and safe deletion from candidate_skills.
+  * `CandidateProjectControllerTest` (9 tests): Portfolio projects CRUD, URL validation, sort ordering, and cross-candidate isolation.
+  * `CandidateExperienceControllerTest` (9 tests): Experience CRUD, current vs past date invariants, start/end date validations, and ownership isolation.
+  * `CandidateResumeControllerTest` (20 tests): PDF multipart upload, %PDF- magic-byte validation, 5 MiB ceiling, UUID file naming, physical file storage, replacement cleanup, delete cleanup, and 404 when no resume exists.
+  * `CandidateProfileReadinessControllerTest` (16 tests): Real-time deterministic calculation of application readiness based on profile completion, education presence, skill mapping, and active resume.
+  * `CandidateSecurityHardeningTest` (13 tests): Security audit verification covering cross-candidate 404 isolation across all candidate sub-resources, client candidateId injection rejection, path traversal filename sanitization, and SQL injection parameterization resilience.
+  * `CandidateFullLifecycleRegressionTest` (1 test): Full end-to-end multi-step candidate lifecycle from registration through education, skills, projects, experience, resume upload, replacement, deletion, and dynamic readiness state transitions.
+* **Public Discovery & Jobs (Phase 3 — 23 tests):**
+  * `JobControllerTest` (17 tests): Public active job pagination, search filtering (`q`), location filtering, job type, experience level, work mode, skills, salary filtering, deadline and salary sorting, complete job detail retrieval, and strict exclusion of non-public jobs (`DRAFT`, `CLOSED`, `ARCHIVED`, `EXPIRED`, `DELETED`, `INACTIVE_COMPANY`).
+  * `CompanyControllerTest` (6 tests): Active company pagination, keyword search, active job counts, and 404 exclusion of inactive companies.
+* **Authentication & Security (Phase 2 — 18 tests):**
+  * `AuthControllerTest` (14 tests): Candidate/recruiter registration, admin self-registration rejection, duplicate email handling, validation, login, token verification, `/auth/me`, and logout.
+  * `JwtServiceTest` (4 tests): Cryptographic secret key enforcement, claim extraction, expiration timestamping, and tampered token rejection.
+* **Core Foundation & Error Framework (Phase 1 — 8 tests):**
+  * `GlobalExceptionHandlerTest` (4 tests): Canonical `ApiErrorResponse` envelope format and status code mapping (400, 404, 409, 422).
+  * `ApiResponseContractTest` (3 tests): Strict conformity of single-item and paginated collection envelopes.
+  * `PageRequestDtoTest` (3 tests): Default page/size, offset calculation, and upper bound capping (max 100).
+  * `HealthControllerTest` (1 test): Live end-to-end Three-Tier request flow and database connectivity check.
+  * `CareerConnectApplicationTests` (1 test): Spring context bootstrapping with Flyway migration execution.
+
 
