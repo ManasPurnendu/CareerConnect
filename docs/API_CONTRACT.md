@@ -202,14 +202,15 @@
 * **Path:** `/api/jobs`
 * **Access:** Public
 * **Query Parameters:**
-  * `q` (string, optional): Full-text search matching title, description, or company name.
+  * `keyword` (string, optional): Full-text search matching title, description, or company name.
   * `location` (string, optional): Location substring match.
-  * `jobType` (enum, optional): `INTERNSHIP`, `FULL_TIME`, `PART_TIME`, `APPRENTICESHIP`, `TRAINEE`.
+  * `employmentType` (enum, optional): `INTERNSHIP`, `FULL_TIME`, `PART_TIME`, `APPRENTICESHIP`, `TRAINEE`.
   * `experienceLevel` (enum, optional): `INTERNSHIP`, `FRESHER`, `ZERO_TO_ONE_YEARS`, `ONE_TO_TWO_YEARS`.
   * `workMode` (enum, optional): `ONSITE`, `HYBRID`, `REMOTE`.
-  * `skill` (string, optional): Case-insensitive required skill name match.
-  * `minSalaryLpa` (decimal, optional): Minimum salary threshold.
-  * `sort` (string, optional): `newest` (default), `deadline,asc`, `salary,desc`, `title,asc`.
+  * `skills` (string, optional): Comma-separated skill names; jobs matching any listed skill are returned.
+  * `minSalary` (decimal, optional): Minimum salary threshold in LPA. Matches jobs whose `salaryMaxLpa >= minSalary`.
+  * `maxSalary` (decimal, optional): Maximum salary threshold in LPA. Matches jobs whose `salaryMinLpa <= maxSalary`.
+  * `sort` (string, optional): `latest` (default), `oldest`, `deadline,asc`, `salary,desc`, `title,asc`.
   * `page` (int, optional): Zero-based page index (default 0).
   * `size` (int, optional): Page size (default 20, max 100).
 * **Public Invariant:** Only returns jobs where `status = 'ACTIVE'`, `application_deadline >= CURRENT_DATE`, `deleted_at IS NULL`, and `companies.is_active = TRUE`.

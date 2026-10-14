@@ -78,8 +78,8 @@ class JobControllerTest {
         // 3. Seed Valid Active Jobs
         // Job 1: Java + Spring Boot, Backend, Bengaluru, ONSITE, 6-9 LPA, INTERNSHIP
         jdbcTemplate.update("""
-                INSERT INTO jobs (company_id, title, description, responsibilities, requirements, job_type, experience_level, work_mode, location, salary_min_lpa, salary_max_lpa, application_deadline, status)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                INSERT INTO jobs (company_id, title, description, responsibilities, requirements, job_type, experience_level, work_mode, location, salary_min_lpa, salary_max_lpa, application_deadline, status, created_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, TIMESTAMP '2026-10-14 10:00:00')
                 """, activeCompanyId, "Java Backend Intern", "Work on high throughput Java services", "Build REST APIs", "Solid OOP foundations",
                 "INTERNSHIP", "INTERNSHIP", "ONSITE", "Bengaluru", 6.00, 9.00, future3, "ACTIVE");
         activeJobId1 = jdbcTemplate.queryForObject("SELECT id FROM jobs WHERE title = 'Java Backend Intern'", Long.class);
@@ -88,8 +88,8 @@ class JobControllerTest {
 
         // Job 2: React, Frontend, Pune, REMOTE, 10-15 LPA, FRESHER
         jdbcTemplate.update("""
-                INSERT INTO jobs (company_id, title, description, responsibilities, requirements, job_type, experience_level, work_mode, location, salary_min_lpa, salary_max_lpa, application_deadline, status)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                INSERT INTO jobs (company_id, title, description, responsibilities, requirements, job_type, experience_level, work_mode, location, salary_min_lpa, salary_max_lpa, application_deadline, status, created_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, TIMESTAMP '2026-10-14 11:00:00')
                 """, activeCompanyId, "Frontend Engineer", "Build beautiful web UIs", "Implement design system", "Proficient in React & CSS",
                 "FULL_TIME", "FRESHER", "REMOTE", "Pune", 10.00, 15.00, future1, "ACTIVE");
         activeJobId2 = jdbcTemplate.queryForObject("SELECT id FROM jobs WHERE title = 'Frontend Engineer'", Long.class);
@@ -97,8 +97,8 @@ class JobControllerTest {
 
         // Job 3: Java, Full Stack, Bengaluru, HYBRID, 12-18 LPA, ZERO_TO_ONE_YEARS
         jdbcTemplate.update("""
-                INSERT INTO jobs (company_id, title, description, responsibilities, requirements, job_type, experience_level, work_mode, location, salary_min_lpa, salary_max_lpa, application_deadline, status)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                INSERT INTO jobs (company_id, title, description, responsibilities, requirements, job_type, experience_level, work_mode, location, salary_min_lpa, salary_max_lpa, application_deadline, status, created_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, TIMESTAMP '2026-10-14 12:00:00')
                 """, activeCompanyId, "Full Stack Associate", "Full stack web development", "Maintain end-to-end features", "Java & React experience",
                 "FULL_TIME", "ZERO_TO_ONE_YEARS", "HYBRID", "Bengaluru", 12.00, 18.00, future2, "ACTIVE");
         activeJobId3 = jdbcTemplate.queryForObject("SELECT id FROM jobs WHERE title = 'Full Stack Associate'", Long.class);
@@ -170,9 +170,9 @@ class JobControllerTest {
     }
 
     @Test
-    @DisplayName("GET /api/jobs?q=Frontend should search by title and description")
-    void shouldFilterJobsBySearchQuery() throws Exception {
-        mockMvc.perform(get("/api/jobs?q=Frontend")
+    @DisplayName("GET /api/jobs?keyword=Frontend should search by title and description")
+    void shouldFilterJobsByKeyword() throws Exception {
+        mockMvc.perform(get("/api/jobs?keyword=Frontend")
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
@@ -191,9 +191,9 @@ class JobControllerTest {
     }
 
     @Test
-    @DisplayName("GET /api/jobs?jobType=INTERNSHIP should filter by job type")
-    void shouldFilterJobsByJobType() throws Exception {
-        mockMvc.perform(get("/api/jobs?jobType=INTERNSHIP")
+    @DisplayName("GET /api/jobs?employmentType=INTERNSHIP should filter by employment type")
+    void shouldFilterJobsByEmploymentType() throws Exception {
+        mockMvc.perform(get("/api/jobs?employmentType=INTERNSHIP")
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data", hasSize(1)))
@@ -224,9 +224,9 @@ class JobControllerTest {
     }
 
     @Test
-    @DisplayName("GET /api/jobs?skill=React should filter by required skill name")
+    @DisplayName("GET /api/jobs?skills=React should filter by required skill name")
     void shouldFilterJobsBySkill() throws Exception {
-        mockMvc.perform(get("/api/jobs?skill=React")
+        mockMvc.perform(get("/api/jobs?skills=React")
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data", hasSize(2)))
@@ -234,13 +234,51 @@ class JobControllerTest {
     }
 
     @Test
-    @DisplayName("GET /api/jobs?minSalaryLpa=12 should filter by minimum salary offer")
+    @DisplayName("GET /api/jobs?skills=Java,Spring Boot should filter jobs having both required skills")
+    void shouldFilterJobsByMultipleSkills() throws Exception {
+        mockMvc.perform(get("/api/jobs?skills=Java,Spring Boot")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data", hasSize(1)))
+                .andExpect(jsonPath("$.data[0].title").value("Java Backend Intern"));
+    }
+
+    @Test
+    @DisplayName("GET /api/jobs?minSalary=12 should filter by minimum salary threshold")
     void shouldFilterJobsByMinSalary() throws Exception {
-        mockMvc.perform(get("/api/jobs?minSalaryLpa=12")
+        mockMvc.perform(get("/api/jobs?minSalary=12")
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data", hasSize(2)))
                 .andExpect(jsonPath("$.data[*].title", containsInAnyOrder("Frontend Engineer", "Full Stack Associate")));
+    }
+
+    @Test
+    @DisplayName("GET /api/jobs?maxSalary=9 should filter by maximum salary threshold")
+    void shouldFilterJobsByMaxSalary() throws Exception {
+        mockMvc.perform(get("/api/jobs?maxSalary=9")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data", hasSize(1)))
+                .andExpect(jsonPath("$.data[0].title").value("Java Backend Intern"));
+    }
+
+    @Test
+    @DisplayName("GET /api/jobs?sort=latest should sort jobs newest first")
+    void shouldSortJobsByLatest() throws Exception {
+        mockMvc.perform(get("/api/jobs?sort=latest")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data[0].title").value("Full Stack Associate"));
+    }
+
+    @Test
+    @DisplayName("GET /api/jobs?sort=oldest should sort jobs oldest first")
+    void shouldSortJobsByOldest() throws Exception {
+        mockMvc.perform(get("/api/jobs?sort=oldest")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data[0].title").value("Java Backend Intern"));
     }
 
     @Test
@@ -278,45 +316,58 @@ class JobControllerTest {
     }
 
     @Test
-    @DisplayName("GET /api/jobs/{id} on non-public jobs (DRAFT, CLOSED, ARCHIVED, EXPIRED, DELETED, INACTIVE COMPANY) should return 404 JOB_NOT_FOUND")
+    @DisplayName("GET /api/jobs/{id} on non-public jobs should return 404 with data:null and JOB_NOT_FOUND")
     void shouldReturn404ForNonPublicJobDirectAccess() throws Exception {
         // DRAFT
         mockMvc.perform(get("/api/jobs/" + draftJobId))
                 .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.data").value(nullValue()))
                 .andExpect(jsonPath("$.errorCode").value("JOB_NOT_FOUND"));
 
         // CLOSED
         mockMvc.perform(get("/api/jobs/" + closedJobId))
                 .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.data").value(nullValue()))
                 .andExpect(jsonPath("$.errorCode").value("JOB_NOT_FOUND"));
 
         // ARCHIVED
         mockMvc.perform(get("/api/jobs/" + archivedJobId))
                 .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.data").value(nullValue()))
                 .andExpect(jsonPath("$.errorCode").value("JOB_NOT_FOUND"));
 
         // EXPIRED
         mockMvc.perform(get("/api/jobs/" + expiredJobId))
                 .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.data").value(nullValue()))
                 .andExpect(jsonPath("$.errorCode").value("JOB_NOT_FOUND"));
 
         // SOFT DELETED
         mockMvc.perform(get("/api/jobs/" + softDeletedJobId))
                 .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.data").value(nullValue()))
                 .andExpect(jsonPath("$.errorCode").value("JOB_NOT_FOUND"));
 
         // INACTIVE COMPANY
         mockMvc.perform(get("/api/jobs/" + inactiveCompanyJobId))
                 .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.data").value(nullValue()))
                 .andExpect(jsonPath("$.errorCode").value("JOB_NOT_FOUND"));
     }
 
     @Test
-    @DisplayName("GET /api/jobs/999999 on nonexistent job should return 404 JOB_NOT_FOUND")
+    @DisplayName("GET /api/jobs/999999 on nonexistent job should return 404 with data:null and JOB_NOT_FOUND")
     void shouldReturn404ForNonexistentJob() throws Exception {
         mockMvc.perform(get("/api/jobs/999999"))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.data").value(nullValue()))
                 .andExpect(jsonPath("$.errorCode").value("JOB_NOT_FOUND"));
     }
 }

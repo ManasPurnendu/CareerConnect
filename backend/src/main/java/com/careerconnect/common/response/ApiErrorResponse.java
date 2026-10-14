@@ -1,5 +1,8 @@
 package com.careerconnect.common.response;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
+
+@JsonInclude(JsonInclude.Include.ALWAYS)
 public class ApiErrorResponse {
 
     private final boolean success = false;

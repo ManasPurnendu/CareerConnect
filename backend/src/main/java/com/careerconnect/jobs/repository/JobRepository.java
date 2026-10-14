@@ -236,9 +236,9 @@ public class JobRepository {
     }
 
     private void applyFilters(StringBuilder sql, List<Object> queryParams, JobFilterParams params) {
-        if (params.q() != null && !params.q().trim().isEmpty()) {
+        if (params.keyword() != null && !params.keyword().trim().isEmpty()) {
             sql.append(" AND (LOWER(j.title) LIKE ? OR LOWER(j.description) LIKE ? OR LOWER(c.name) LIKE ?)");
-            String pattern = "%" + params.q().trim().toLowerCase() + "%";
+            String pattern = "%" + params.keyword().trim().toLowerCase() + "%";
             queryParams.add(pattern);
             queryParams.add(pattern);
             queryParams.add(pattern);
@@ -249,9 +249,9 @@ public class JobRepository {
             queryParams.add("%" + params.location().trim().toLowerCase() + "%");
         }
 
-        if (params.jobType() != null) {
+        if (params.employmentType() != null) {
             sql.append(" AND j.job_type = ?");
-            queryParams.add(params.jobType().name());
+            queryParams.add(params.employmentType().name());
         }
 
         if (params.experienceLevel() != null) {
@@ -264,24 +264,35 @@ public class JobRepository {
             queryParams.add(params.workMode().name());
         }
 
-        if (params.skill() != null && !params.skill().trim().isEmpty()) {
-            String skillSearch = params.skill().trim().toLowerCase();
-            sql.append("""
-                     AND EXISTS (
-                         SELECT 1 FROM job_skills js
-                         JOIN skills s ON js.skill_id = s.id
-                         WHERE js.job_id = j.id
-                           AND (LOWER(s.name) = ? OR s.normalized_name = ?)
-                     )
-                    """);
-            queryParams.add(skillSearch);
-            queryParams.add(skillSearch);
+        if (params.skills() != null && !params.skills().trim().isEmpty()) {
+            String[] skillTokens = params.skills().split(",");
+            for (String rawToken : skillTokens) {
+                String skillSearch = rawToken.trim().toLowerCase();
+                if (!skillSearch.isEmpty()) {
+                    sql.append("""
+                             AND EXISTS (
+                                 SELECT 1 FROM job_skills js
+                                 JOIN skills s ON js.skill_id = s.id
+                                 WHERE js.job_id = j.id
+                                   AND (LOWER(s.name) = ? OR s.normalized_name = ?)
+                             )
+                            """);
+                    queryParams.add(skillSearch);
+                    queryParams.add(skillSearch);
+                }
+            }
         }
 
-        if (params.minSalaryLpa() != null) {
+        if (params.minSalary() != null) {
             sql.append(" AND (j.salary_max_lpa >= ? OR (j.salary_max_lpa IS NULL AND j.salary_min_lpa >= ?))");
-            queryParams.add(params.minSalaryLpa());
-            queryParams.add(params.minSalaryLpa());
+            queryParams.add(params.minSalary());
+            queryParams.add(params.minSalary());
+        }
+
+        if (params.maxSalary() != null) {
+            sql.append(" AND (j.salary_min_lpa <= ? OR (j.salary_min_lpa IS NULL AND j.salary_max_lpa <= ?))");
+            queryParams.add(params.maxSalary());
+            queryParams.add(params.maxSalary());
         }
     }
 
@@ -293,6 +304,11 @@ public class JobRepository {
 
         String normalizedSort = sort.trim().toLowerCase();
         switch (normalizedSort) {
+            case "latest":
+            case "newest":
+            case "createdat,desc":
+                sql.append(" ORDER BY j.created_at DESC, j.id DESC");
+                break;
             case "deadline":
             case "deadline,asc":
                 sql.append(" ORDER BY j.application_deadline ASC, j.id DESC");

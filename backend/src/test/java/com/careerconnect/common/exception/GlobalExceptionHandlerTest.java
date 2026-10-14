@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import static org.hamcrest.Matchers.nullValue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -32,44 +33,47 @@ class GlobalExceptionHandlerTest {
     private MockMvc mockMvc;
 
     @Test
-    @DisplayName("BusinessRuleException must map to HTTP 422 with specified errorCode")
+    @DisplayName("BusinessRuleException must map to HTTP 422 with specified errorCode and data:null")
     void shouldMapBusinessRuleExceptionTo422() throws Exception {
         mockMvc.perform(get("/api/test-exceptions/business-rule"))
                 .andExpect(status().isUnprocessableEntity())
                 .andExpect(jsonPath("$.success").value(false))
-                .andExpect(jsonPath("$.data").doesNotExist())
+                .andExpect(jsonPath("$.data").value(nullValue()))
                 .andExpect(jsonPath("$.errorCode").value("JOB_DEADLINE_PASSED"))
                 .andExpect(jsonPath("$.message").value("Application deadline has passed."));
     }
 
     @Test
-    @DisplayName("ResourceNotFoundException must map to HTTP 404 with RESOURCE_NOT_FOUND")
+    @DisplayName("ResourceNotFoundException must map to HTTP 404 with RESOURCE_NOT_FOUND and data:null")
     void shouldMapResourceNotFoundExceptionTo404() throws Exception {
         mockMvc.perform(get("/api/test-exceptions/not-found"))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.data").value(nullValue()))
                 .andExpect(jsonPath("$.errorCode").value("RESOURCE_NOT_FOUND"))
                 .andExpect(jsonPath("$.message").value("Job with ID 999 not found."));
     }
 
     @Test
-    @DisplayName("ConflictException must map to HTTP 409 with DUPLICATE_APPLICATION")
+    @DisplayName("ConflictException must map to HTTP 409 with DUPLICATE_APPLICATION and data:null")
     void shouldMapConflictExceptionTo409() throws Exception {
         mockMvc.perform(get("/api/test-exceptions/conflict"))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.data").value(nullValue()))
                 .andExpect(jsonPath("$.errorCode").value("DUPLICATE_APPLICATION"))
                 .andExpect(jsonPath("$.message").value("You have already applied to this job."));
     }
 
     @Test
-    @DisplayName("Bean Validation failure must map to HTTP 400 with VALIDATION_FAILED")
+    @DisplayName("Bean Validation failure must map to HTTP 400 with VALIDATION_FAILED and data:null")
     void shouldMapBeanValidationTo400() throws Exception {
         mockMvc.perform(post("/api/test-exceptions/validate")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"name\":\"\"}"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.data").value(nullValue()))
                 .andExpect(jsonPath("$.errorCode").value("VALIDATION_FAILED"))
                 .andExpect(jsonPath("$.message").isNotEmpty());
     }

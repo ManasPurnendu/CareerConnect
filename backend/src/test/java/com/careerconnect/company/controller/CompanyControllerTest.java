@@ -125,16 +125,18 @@ class CompanyControllerTest {
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.data").value(nullValue()))
                 .andExpect(jsonPath("$.errorCode").value("RESOURCE_NOT_FOUND"));
     }
 
     @Test
-    @DisplayName("GET /api/companies/999999 on nonexistent company should return 404 RESOURCE_NOT_FOUND")
+    @DisplayName("GET /api/companies/999999 on nonexistent company should return 404 RESOURCE_NOT_FOUND with data:null")
     void shouldReturn404ForNonexistentCompany() throws Exception {
         mockMvc.perform(get("/api/companies/999999")
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.data").value(nullValue()))
                 .andExpect(jsonPath("$.errorCode").value("RESOURCE_NOT_FOUND"));
     }
 }

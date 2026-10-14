@@ -7,13 +7,14 @@ import com.careerconnect.jobs.model.WorkMode;
 import java.math.BigDecimal;
 
 public record JobFilterParams(
-        String q,
+        String keyword,
         String location,
-        JobType jobType,
+        JobType employmentType,
         ExperienceLevel experienceLevel,
         WorkMode workMode,
-        String skill,
-        BigDecimal minSalaryLpa,
+        String skills,
+        BigDecimal minSalary,
+        BigDecimal maxSalary,
         String sort,
         Integer page,
         Integer size
