@@ -1,0 +1,32 @@
+# Operating System Files
+.DS_Store
+Thumbs.db
+
+# Tools
+.tools/
+
+# Build and Target
+**/target/
+target/
+*.class
+
+# Logs
+*.log
+
+# Sensitive Configuration / Local Overrides
+**/application-local.yml
+application-local.yml
+.env
+.env.local
+
+# IDEs
+.idea/
+*.iml
+.vscode/
+.settings/
+.project
+.classpath
+
+# Uploads / Runtime files
+uploads/
+**/uploads/
