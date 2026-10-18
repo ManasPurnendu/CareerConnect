@@ -1,12 +1,16 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { jobsApi } from '../../api/jobs';
-import type { JobDetailDto } from '../../types/api';
+import { candidateApi } from '../../api/candidate';
+import type { JobDetailDto, JobMatchDto, ProfileReadinessDto } from '../../types/api';
 import { Badge } from '../../components/ui/Badge';
 import { Button } from '../../components/ui/Button';
 import { Breadcrumb } from '../../components/ui/Breadcrumb';
 import { LoadingState } from '../../components/ui/LoadingState';
 import { ErrorState } from '../../components/ui/ErrorState';
+import { Modal } from '../../components/ui/Modal';
+import { Textarea } from '../../components/ui/Textarea';
+import { Alert } from '../../components/ui/Alert';
 import { useAuth } from '../../auth/useAuth';
 
 export const JobDetailPage: React.FC = () => {
@@ -15,26 +19,99 @@ export const JobDetailPage: React.FC = () => {
   const { isAuthenticated, user } = useAuth();
 
   const [job, setJob] = useState<JobDetailDto | null>(null);
+  const [matchData, setMatchData] = useState<JobMatchDto | null>(null);
+  const [readiness, setReadiness] = useState<ProfileReadinessDto | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    const fetchJob = async () => {
-      if (!jobId) return;
-      setIsLoading(true);
-      setError(null);
-      try {
-        const data = await jobsApi.getJobById(jobId);
-        setJob(data);
-      } catch (err: unknown) {
-        const msg = err instanceof Error ? err.message : 'The requested job posting could not be found or has been closed.';
-        setError(msg);
-      } finally {
-        setIsLoading(false);
+  // Apply Modal state
+  const [isApplyModalOpen, setIsApplyModalOpen] = useState<boolean>(false);
+  const [isReadinessModalOpen, setIsReadinessModalOpen] = useState<boolean>(false);
+  const [coverLetter, setCoverLetter] = useState<string>('');
+  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+  const [applyFeedback, setApplyFeedback] = useState<{ type: 'success' | 'error'; message: string; applicationId?: number } | null>(null);
+
+  const isCandidate = isAuthenticated && user?.role === 'CANDIDATE';
+
+  const fetchJobData = useCallback(async () => {
+    if (!jobId) return;
+    setIsLoading(true);
+    setError(null);
+    try {
+      const data = await jobsApi.getJobById(jobId);
+      setJob(data);
+
+      if (isCandidate) {
+        try {
+          const match = await candidateApi.getJobMatch(jobId);
+          setMatchData(match);
+        } catch {
+          // Non-blocking if match service is unavailable
+        }
       }
-    };
-    fetchJob();
-  }, [jobId]);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'The requested job posting could not be found or has been closed.';
+      setError(msg);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [jobId, isCandidate]);
+
+  useEffect(() => {
+    fetchJobData();
+  }, [fetchJobData]);
+
+  const handleApplyClick = async () => {
+    if (!isAuthenticated) {
+      navigate(`/login?next=${encodeURIComponent(`/jobs/${jobId}`)}`);
+      return;
+    }
+
+    if (user?.role !== 'CANDIDATE') {
+      alert('Only candidate accounts can submit job applications.');
+      return;
+    }
+
+    // Check authoritative profile readiness from backend
+    try {
+      const readyState = await candidateApi.getReadiness();
+      setReadiness(readyState);
+
+      if (!readyState.readyToApply) {
+        setIsReadinessModalOpen(true);
+      } else {
+        setIsApplyModalOpen(true);
+      }
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Unable to verify profile readiness.';
+      setApplyFeedback({ type: 'error', message: msg });
+    }
+  };
+
+  const handleApplicationSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!jobId) return;
+
+    setIsSubmitting(true);
+    setApplyFeedback(null);
+    try {
+      const result = await candidateApi.applyForJob(jobId, {
+        coverLetter: coverLetter.trim() || undefined,
+      });
+
+      setIsApplyModalOpen(false);
+      setApplyFeedback({
+        type: 'success',
+        message: 'Your application has been successfully submitted!',
+        applicationId: result.applicationId,
+      });
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Failed to submit application.';
+      setApplyFeedback({ type: 'error', message: msg });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   if (isLoading) {
     return (
@@ -95,16 +172,6 @@ export const JobDetailPage: React.FC = () => {
     }
   };
 
-  const handleApplyClick = () => {
-    if (!isAuthenticated) {
-      navigate(`/login?next=${encodeURIComponent(`/jobs/${job.id}`)}`);
-    } else if (user?.role === 'CANDIDATE') {
-      navigate(`/candidate/jobs/${job.id}`);
-    } else {
-      alert('Only candidate accounts can submit job applications.');
-    }
-  };
-
   return (
     <div className="layout-container py-8 sm:py-10 max-w-4xl mx-auto space-y-6">
       <Breadcrumb
@@ -114,6 +181,24 @@ export const JobDetailPage: React.FC = () => {
           { label: job.title },
         ]}
       />
+
+      {applyFeedback && (
+        <Alert
+          variant={applyFeedback.type === 'success' ? 'success' : 'error'}
+          onClose={() => setApplyFeedback(null)}
+        >
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+            <span>{applyFeedback.message}</span>
+            {applyFeedback.applicationId && (
+              <Link to={`/candidate/applications/${applyFeedback.applicationId}`}>
+                <Button variant="primary" size="sm" className="whitespace-nowrap">
+                  View Application Details
+                </Button>
+              </Link>
+            )}
+          </div>
+        </Alert>
+      )}
 
       {/* Main Job Header Card */}
       <div className="bg-white rounded border border-outline-warm p-6 sm:p-8 shadow-subtle space-y-6">
@@ -181,6 +266,54 @@ export const JobDetailPage: React.FC = () => {
             </Badge>
           )}
         </div>
+
+        {/* Deterministic Job Match Card (Only for authenticated Candidate) */}
+        {isCandidate && matchData && (
+          <div className="p-4 sm:p-5 rounded-lg border border-primary/20 bg-[#F4F8F5] space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className="material-symbols-outlined text-primary !text-2xl">
+                  insights
+                </span>
+                <div>
+                  <h3 className="font-headline font-semibold text-sm text-slate-text">
+                    Deterministic Skill Match
+                  </h3>
+                  <p className="text-xs text-slate-muted">Authoritative comparison against candidate profile</p>
+                </div>
+              </div>
+              <div className="text-right">
+                <span className="font-headline font-bold text-2xl text-primary">
+                  {matchData.percentage}%
+                </span>
+                <span className="block text-[10px] text-slate-muted uppercase tracking-wider font-medium">
+                  Skill Match
+                </span>
+              </div>
+            </div>
+
+            <div className="space-y-2 pt-1 text-xs">
+              {matchData.matchedSkills.length > 0 && (
+                <div>
+                  <span className="font-medium text-slate-muted">Matched Skills ({matchData.matchedSkills.length}): </span>
+                  <span className="text-primary font-medium">{matchData.matchedSkills.join(', ')}</span>
+                </div>
+              )}
+              {matchData.missingSkills.length > 0 && (
+                <div>
+                  <span className="font-medium text-slate-muted">Missing Requirements ({matchData.missingSkills.length}): </span>
+                  <span className="text-amber-700 font-medium">{matchData.missingSkills.join(', ')}</span>
+                </div>
+              )}
+              {matchData.additionalSkills.length > 0 && (
+                <div>
+                  <span className="font-medium text-slate-muted">Additional Skills: </span>
+                  <span className="text-slate-text">{matchData.additionalSkills.join(', ')}</span>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* Required Skills */}
         {job.skills && job.skills.length > 0 && (
@@ -252,6 +385,131 @@ export const JobDetailPage: React.FC = () => {
           </Button>
         </div>
       </div>
+
+      {/* Incomplete Readiness Modal */}
+      <Modal
+        isOpen={isReadinessModalOpen}
+        onClose={() => setIsReadinessModalOpen(false)}
+        title="Profile Incomplete — Cannot Apply"
+      >
+        <div className="space-y-4">
+          <p className="text-xs text-slate-text leading-relaxed">
+            CareerConnect requires all candidates to have a verified profile and resume snapshot before applying to roles.
+          </p>
+
+          <div className="p-4 bg-[#F9FAF8] border border-outline-warm rounded space-y-2">
+            <div className="flex items-center gap-2 text-xs">
+              <span
+                className={`material-symbols-outlined !text-lg ${
+                  readiness?.profileComplete ? 'text-primary' : 'text-rose-600'
+                }`}
+              >
+                {readiness?.profileComplete ? 'check_circle' : 'cancel'}
+              </span>
+              <span className={readiness?.profileComplete ? 'text-slate-text' : 'text-rose-700 font-medium'}>
+                Full Name completed
+              </span>
+            </div>
+            <div className="flex items-center gap-2 text-xs">
+              <span
+                className={`material-symbols-outlined !text-lg ${
+                  readiness?.hasEducation ? 'text-primary' : 'text-rose-600'
+                }`}
+              >
+                {readiness?.hasEducation ? 'check_circle' : 'cancel'}
+              </span>
+              <span className={readiness?.hasEducation ? 'text-slate-text' : 'text-rose-700 font-medium'}>
+                At least one education record
+              </span>
+            </div>
+            <div className="flex items-center gap-2 text-xs">
+              <span
+                className={`material-symbols-outlined !text-lg ${
+                  readiness?.hasSkills ? 'text-primary' : 'text-rose-600'
+                }`}
+              >
+                {readiness?.hasSkills ? 'check_circle' : 'cancel'}
+              </span>
+              <span className={readiness?.hasSkills ? 'text-slate-text' : 'text-rose-700 font-medium'}>
+                At least one skill assigned
+              </span>
+            </div>
+            <div className="flex items-center gap-2 text-xs">
+              <span
+                className={`material-symbols-outlined !text-lg ${
+                  readiness?.hasResume ? 'text-primary' : 'text-rose-600'
+                }`}
+              >
+                {readiness?.hasResume ? 'check_circle' : 'cancel'}
+              </span>
+              <span className={readiness?.hasResume ? 'text-slate-text' : 'text-rose-700 font-medium'}>
+                Current active resume uploaded (PDF)
+              </span>
+            </div>
+          </div>
+
+          <div className="flex justify-end gap-2 pt-2">
+            <Button variant="outline" size="sm" onClick={() => setIsReadinessModalOpen(false)}>
+              Close
+            </Button>
+            <Link to="/candidate/profile">
+              <Button variant="primary" size="sm">
+                Complete Profile Now
+              </Button>
+            </Link>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Application Submission Modal */}
+      <Modal
+        isOpen={isApplyModalOpen}
+        onClose={() => setIsApplyModalOpen(false)}
+        title={`Apply for ${job.title}`}
+      >
+        <form onSubmit={handleApplicationSubmit} className="space-y-4">
+          <div className="p-3 bg-[#F4F8F5] border border-primary/20 rounded text-xs space-y-1">
+            <p className="font-semibold text-slate-text">
+              Applying to {companyName} · {job.location}
+            </p>
+            <p className="text-slate-muted">
+              Your verified profile, skills, education, and current resume will be captured as an immutable application snapshot.
+            </p>
+          </div>
+
+          <Textarea
+            label="Cover Letter (Optional)"
+            value={coverLetter}
+            onChange={(e) => setCoverLetter(e.target.value)}
+            placeholder="Introduce yourself to the recruiter and highlight your relevant experience or projects..."
+            rows={4}
+            maxLength={5000}
+          />
+          <p className="text-[11px] text-slate-muted text-right">
+            {coverLetter.length} / 5000 characters
+          </p>
+
+          <div className="flex justify-end gap-2 pt-2">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => setIsApplyModalOpen(false)}
+              disabled={isSubmitting}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              variant="primary"
+              size="sm"
+              isLoading={isSubmitting}
+            >
+              Submit Application
+            </Button>
+          </div>
+        </form>
+      </Modal>
     </div>
   );
 };

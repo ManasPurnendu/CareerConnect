@@ -23,6 +23,7 @@ import java.time.LocalDate;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -416,5 +417,25 @@ class CandidateExperienceControllerTest {
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.success").value(false))
                 .andExpect(jsonPath("$.errorCode").value("FORBIDDEN"));
+    }
+
+    @Test
+    @DisplayName("P4.5-13: Authenticated candidate can GET own experience list")
+    void shouldGetOwnExperienceListSuccessfully() throws Exception {
+        UserAuth user = registerUserAndGetAuth("candidate.explist@example.com", Role.CANDIDATE, "Exp User");
+
+        CreateExperienceRequest exp1 = new CreateExperienceRequest("Company 1", "Dev", LocalDate.of(2021, 1, 1), LocalDate.of(2022, 1, 1), false, "Desc 1", 1);
+        CreateExperienceRequest exp2 = new CreateExperienceRequest("Company 2", "Senior Dev", LocalDate.of(2022, 2, 1), null, true, "Desc 2", 2);
+        createExperienceRecord(user.token(), exp1);
+        createExperienceRecord(user.token(), exp2);
+
+        mockMvc.perform(get("/api/candidate/experience")
+                        .header("Authorization", "Bearer " + user.token()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data").isArray())
+                .andExpect(jsonPath("$.data.length()").value(2))
+                .andExpect(jsonPath("$.data[0].companyName").value("Company 1"))
+                .andExpect(jsonPath("$.data[1].companyName").value("Company 2"));
     }
 }

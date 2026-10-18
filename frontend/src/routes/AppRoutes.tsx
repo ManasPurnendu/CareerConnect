@@ -25,6 +25,7 @@ import { RegisterPage } from '../pages/auth/RegisterPage';
 // Candidate Pages
 import { CandidateDashboardPage } from '../pages/candidate/CandidateDashboardPage';
 import { CandidateApplicationsPage } from '../pages/candidate/CandidateApplicationsPage';
+import { ApplicationDetailPage } from '../pages/candidate/ApplicationDetailPage';
 import { CandidateProfilePage } from '../pages/candidate/CandidateProfilePage';
 import { CandidateNotificationsPage } from '../pages/candidate/CandidateNotificationsPage';
 import { CandidateSettingsPage } from '../pages/candidate/CandidateSettingsPage';
@@ -74,7 +75,7 @@ export const AppRoutes: React.FC = () => {
           <Route path="/candidate/jobs" element={<JobsPage />} />
           <Route path="/candidate/jobs/:jobId" element={<JobDetailPage />} />
           <Route path="/candidate/applications" element={<CandidateApplicationsPage />} />
-          <Route path="/candidate/applications/:applicationId" element={<CandidateApplicationsPage />} />
+          <Route path="/candidate/applications/:applicationId" element={<ApplicationDetailPage />} />
           <Route path="/candidate/profile" element={<CandidateProfilePage />} />
           <Route path="/candidate/profile/edit" element={<CandidateProfilePage />} />
           <Route path="/candidate/notifications" element={<CandidateNotificationsPage />} />

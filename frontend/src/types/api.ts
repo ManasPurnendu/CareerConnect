@@ -165,22 +165,254 @@ export interface JobDetailDto {
 export type Job = JobSummaryDto;
 export type Company = CompanySummaryDto;
 
-export interface CandidateProfile {
+export interface CandidateProfileResponse {
   id: number;
-  userId: number;
   fullName: string;
-  headline?: string;
-  phone?: string;
-  location?: string;
-  bio?: string;
-  skills: string[];
-  experienceYears?: number;
-  education?: string;
-  isProfileComplete: boolean;
-  resumeUrl?: string;
-  createdAt: string;
-  updatedAt: string;
+  headline?: string | null;
+  location?: string | null;
+  summary?: string | null;
 }
+
+export interface UpdateProfileRequest {
+  fullName: string;
+  headline?: string | null;
+  location?: string | null;
+  summary?: string | null;
+}
+
+export interface ProfileReadinessDto {
+  readyToApply: boolean;
+  profileComplete: boolean;
+  hasEducation: boolean;
+  hasSkills: boolean;
+  hasResume: boolean;
+  missingRequirements: string[];
+}
+
+export interface EducationDto {
+  id: number;
+  candidateId: number;
+  institution: string;
+  degree: string;
+  fieldOfStudy: string;
+  startYear: number;
+  endYear?: number | null;
+  grade?: string | null;
+  sortOrder: number;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface CreateEducationRequest {
+  institution: string;
+  degree: string;
+  fieldOfStudy: string;
+  startYear: number;
+  endYear?: number | null;
+  grade?: string | null;
+  sortOrder?: number;
+}
+
+export interface UpdateEducationRequest {
+  institution: string;
+  degree: string;
+  fieldOfStudy: string;
+  startYear: number;
+  endYear?: number | null;
+  grade?: string | null;
+  sortOrder?: number;
+}
+
+export interface CandidateSkillDto {
+  id: number;
+  name: string;
+}
+
+export interface AssignSkillRequest {
+  name: string;
+}
+
+export interface ProjectDto {
+  id: number;
+  candidateId: number;
+  title: string;
+  description: string;
+  projectUrl?: string | null;
+  sortOrder: number;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface CreateProjectRequest {
+  title: string;
+  description: string;
+  projectUrl?: string | null;
+  sortOrder?: number;
+}
+
+export interface UpdateProjectRequest {
+  title: string;
+  description: string;
+  projectUrl?: string | null;
+  sortOrder?: number;
+}
+
+export interface ExperienceDto {
+  id: number;
+  candidateId: number;
+  companyName: string;
+  roleTitle: string;
+  startDate: string;
+  endDate?: string | null;
+  isCurrent: boolean;
+  description?: string | null;
+  sortOrder: number;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface CreateExperienceRequest {
+  companyName: string;
+  roleTitle: string;
+  startDate: string;
+  endDate?: string | null;
+  isCurrent?: boolean;
+  description?: string | null;
+  sortOrder?: number;
+}
+
+export interface UpdateExperienceRequest {
+  companyName: string;
+  roleTitle: string;
+  startDate: string;
+  endDate?: string | null;
+  isCurrent?: boolean;
+  description?: string | null;
+  sortOrder?: number;
+}
+
+export interface ResumeResponse {
+  id: number;
+  originalFilename: string;
+  contentType: string;
+  sizeBytes: number;
+  isCurrent: boolean;
+  createdAt: string;
+  updatedAt?: string;
+}
+
+export interface JobMatchDto {
+  matchedSkills: string[];
+  missingSkills: string[];
+  additionalSkills: string[];
+  percentage: number;
+}
+
+export interface ApplicationStatusHistoryDto {
+  id: number;
+  applicationId: number;
+  fromStatus?: ApplicationStatus | null;
+  toStatus: ApplicationStatus;
+  changedByUserId?: number | null;
+  note?: string | null;
+  createdAt: string;
+}
+
+export interface CandidateEducationSnapshot {
+  id: number;
+  institution: string;
+  degree: string;
+  fieldOfStudy: string;
+  startYear: number;
+  endYear?: number | null;
+  grade?: string | null;
+  sortOrder?: number;
+}
+
+export interface CandidateProjectSnapshot {
+  id: number;
+  title: string;
+  description: string;
+  projectUrl?: string | null;
+  sortOrder?: number;
+}
+
+export interface CandidateExperienceSnapshot {
+  id: number;
+  companyName: string;
+  roleTitle: string;
+  startDate: string;
+  endDate?: string | null;
+  isCurrent?: boolean;
+  description?: string | null;
+  sortOrder?: number;
+}
+
+export interface CandidateSnapshot {
+  candidateId: number;
+  fullName: string;
+  email: string;
+  headline?: string | null;
+  location?: string | null;
+  summary?: string | null;
+  education?: CandidateEducationSnapshot[];
+  skills?: string[];
+  projects?: CandidateProjectSnapshot[];
+  experience?: CandidateExperienceSnapshot[];
+}
+
+export interface ResumeSnapshot {
+  id: number;
+  originalFilename: string;
+  storageKey?: string;
+  contentType: string;
+  sizeBytes: number;
+}
+
+export interface ApplicationResponseDto {
+  applicationId: number;
+  jobId: number;
+  candidateId: number;
+  status: ApplicationStatus;
+  coverLetter?: string | null;
+  appliedAt: string;
+  jobTitle?: string;
+  companyName?: string;
+  candidateSnapshot?: CandidateSnapshot;
+  resumeSnapshot?: ResumeSnapshot;
+  statusHistory?: ApplicationStatusHistoryDto[];
+}
+
+export interface ApplicationSubmissionRequest {
+  coverLetter?: string;
+}
+
+export type NotificationType =
+  | 'APPLICATION_STATUS_CHANGED'
+  | 'JOB_CLOSED'
+  | 'APPLICATION_RECEIVED'
+  | 'NEW_JOB_POSTED';
+
+export interface NotificationDto {
+  id: number;
+  type: NotificationType;
+  title: string;
+  body: string;
+  resourceType?: string | null;
+  resourceId?: number | null;
+  readAt?: string | null;
+  createdAt: string;
+  read: boolean;
+}
+
+export interface NotificationSummaryResponse {
+  items: NotificationDto[];
+  pagination: PaginationMetadata;
+  unreadCount: number;
+}
+
+// Aliases and legacy models for recruiter component compatibility
+export type CandidateProfile = CandidateProfileResponse;
 
 export interface Application {
   id: number;

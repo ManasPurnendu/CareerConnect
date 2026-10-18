@@ -19,6 +19,7 @@ import org.springframework.test.web.servlet.MvcResult;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -397,5 +398,25 @@ class CandidateEducationControllerTest {
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.errorCode").value("VALIDATION_FAILED"))
                 .andExpect(jsonPath("$.message").value(org.hamcrest.Matchers.containsString("End year cannot be before start year")));
+    }
+
+    @Test
+    @DisplayName("P4.3-13: Authenticated candidate can GET own education list")
+    void shouldGetOwnEducationListSuccessfully() throws Exception {
+        UserAuth user = registerUserAndGetAuth("candidate.edulist@example.com", Role.CANDIDATE, "Student List");
+
+        CreateEducationRequest edu1 = new CreateEducationRequest("Uni A", "BSc", "CS", 2020, 2024, "8.0", 1);
+        CreateEducationRequest edu2 = new CreateEducationRequest("Uni B", "MSc", "CS", 2024, 2026, "9.0", 2);
+        createEducationRecord(user.token(), edu1);
+        createEducationRecord(user.token(), edu2);
+
+        mockMvc.perform(get("/api/candidate/education")
+                        .header("Authorization", "Bearer " + user.token()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data").isArray())
+                .andExpect(jsonPath("$.data.length()").value(2))
+                .andExpect(jsonPath("$.data[0].institution").value("Uni A"))
+                .andExpect(jsonPath("$.data[1].institution").value("Uni B"));
     }
 }

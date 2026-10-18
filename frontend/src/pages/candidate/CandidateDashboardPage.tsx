@@ -1,74 +1,134 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { candidateApi } from '../../api/candidate';
-import type { Application, Job, CandidateProfile } from '../../types/api';
+import { jobsApi } from '../../api/jobs';
+import type {
+  ApplicationResponseDto,
+  CandidateProfileResponse,
+  ProfileReadinessDto,
+  ResumeResponse,
+  NotificationSummaryResponse,
+  JobSummaryDto,
+} from '../../types/api';
 import { StatusBadge } from '../../components/ui/StatusBadge';
 import { Button } from '../../components/ui/Button';
 import { Card, CardHeader, CardBody } from '../../components/ui/Card';
 import { Skeleton } from '../../components/ui/Skeleton';
 import { Alert } from '../../components/ui/Alert';
+import { Modal } from '../../components/ui/Modal';
+import { useAuth } from '../../auth/useAuth';
 
 export const CandidateDashboardPage: React.FC = () => {
   const navigate = useNavigate();
-  const [profile, setProfile] = useState<CandidateProfile | null>(null);
-  const [applications, setApplications] = useState<Application[]>([]);
-  const [matchedJobs, setMatchedJobs] = useState<Job[]>([]);
+  const { user } = useAuth();
+
+  const [profile, setProfile] = useState<CandidateProfileResponse | null>(null);
+  const [readiness, setReadiness] = useState<ProfileReadinessDto | null>(null);
+  const [resume, setResume] = useState<ResumeResponse | null>(null);
+  const [applications, setApplications] = useState<ApplicationResponseDto[]>([]);
+  const [notifications, setNotifications] = useState<NotificationSummaryResponse | null>(null);
+  const [recentJobs, setRecentJobs] = useState<JobSummaryDto[]>([]);
+
   const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [withdrawMessage, setWithdrawMessage] = useState<string | null>(null);
+  const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+
+  // Withdrawal modal state
+  const [withdrawingApp, setWithdrawingApp] = useState<ApplicationResponseDto | null>(null);
+  const [isWithdrawing, setIsWithdrawing] = useState<boolean>(false);
 
   useEffect(() => {
-    const loadDashboardData = async () => {
+    const fetchDashboard = async () => {
       setIsLoading(true);
       try {
-        const [profileRes, appRes, matchRes] = await Promise.allSettled([
+        const [profRes, readyRes, resumeRes, appsRes, notifRes, jobsRes] = await Promise.allSettled([
           candidateApi.getProfile(),
+          candidateApi.getReadiness(),
+          candidateApi.getCurrentResume(),
           candidateApi.getApplications(0, 5),
-          candidateApi.getMatchedJobs(0, 4),
+          candidateApi.getNotifications(0, 5, true),
+          jobsApi.getPublicJobs({ page: 0, size: 4 }),
         ]);
 
-        if (profileRes.status === 'fulfilled') setProfile(profileRes.value);
-        if (appRes.status === 'fulfilled' && appRes.value?.content) {
-          setApplications(appRes.value.content);
+        if (profRes.status === 'fulfilled') setProfile(profRes.value);
+        if (readyRes.status === 'fulfilled') setReadiness(readyRes.value);
+        if (resumeRes.status === 'fulfilled') setResume(resumeRes.value);
+        if (appsRes.status === 'fulfilled' && appsRes.value?.data) {
+          setApplications(appsRes.value.data);
         }
-        if (matchRes.status === 'fulfilled' && matchRes.value?.content) {
-          setMatchedJobs(matchRes.value.content);
+        if (notifRes.status === 'fulfilled') setNotifications(notifRes.value);
+        if (jobsRes.status === 'fulfilled' && jobsRes.value?.data) {
+          setRecentJobs(jobsRes.value.data);
         }
       } finally {
         setIsLoading(false);
       }
     };
 
-    loadDashboardData();
+    fetchDashboard();
   }, []);
 
-  const handleWithdraw = async (appId: number) => {
-    if (!window.confirm('Are you sure you want to withdraw this application? This action cannot be undone.')) {
-      return;
-    }
+  const handleWithdrawConfirm = async () => {
+    if (!withdrawingApp) return;
+    setIsWithdrawing(true);
+    setFeedback(null);
     try {
-      // NOTE: uses PATCH per backend specification!
-      await candidateApi.withdrawApplication(appId);
-      setWithdrawMessage(`Application #${appId} successfully withdrawn.`);
+      const updated = await candidateApi.withdrawApplication(withdrawingApp.applicationId);
       setApplications((prev) =>
-        prev.map((app) => (app.id === appId ? { ...app, status: 'WITHDRAWN' } : app))
+        prev.map((app) => (app.applicationId === updated.applicationId ? updated : app))
       );
-    } catch {
-      alert('Failed to withdraw application.');
+      setFeedback({
+        type: 'success',
+        message: `Application #${withdrawingApp.applicationId} for "${withdrawingApp.jobTitle}" has been withdrawn.`,
+      });
+      setWithdrawingApp(null);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Failed to withdraw application.';
+      setFeedback({ type: 'error', message: msg });
+    } finally {
+      setIsWithdrawing(false);
     }
   };
 
-  const isProfileComplete = profile?.isProfileComplete ?? false;
+  const isWithdrawable = (status: string) => {
+    return ['APPLIED', 'UNDER_REVIEW', 'SHORTLISTED', 'INTERVIEW'].includes(status);
+  };
 
   return (
     <div className="space-y-6">
-      {withdrawMessage && (
-        <Alert variant="info" onClose={() => setWithdrawMessage(null)}>
-          {withdrawMessage}
+      {feedback && (
+        <Alert variant={feedback.type === 'success' ? 'success' : 'error'} onClose={() => setFeedback(null)}>
+          {feedback.message}
         </Alert>
       )}
 
-      {/* Profile Readiness Banner (from Stitch Candidate Dashboard) */}
-      {!isLoading && !isProfileComplete && (
+      {/* Greeting Banner */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-white border border-outline-warm rounded p-6 shadow-subtle">
+        <div className="space-y-1">
+          <h1 className="font-headline font-bold text-2xl text-slate-text">
+            Welcome back, {profile?.fullName || user?.fullName || 'Candidate'}
+          </h1>
+          <p className="text-xs text-slate-muted">
+            {profile?.headline || 'Early-career professional'} {profile?.location ? `· ${profile.location}` : ''}
+          </p>
+        </div>
+        <div className="flex items-center gap-3">
+          <Link to="/candidate/profile">
+            <Button variant="outline" size="sm" className="flex items-center gap-1.5">
+              <span className="material-symbols-outlined !text-[16px]">person</span>
+              Edit Profile
+            </Button>
+          </Link>
+          <Link to="/jobs">
+            <Button variant="primary" size="sm" className="flex items-center gap-1.5">
+              <span className="material-symbols-outlined !text-[16px]">work</span>
+              Explore Jobs
+            </Button>
+          </Link>
+        </div>
+      </div>
+
+      {/* Profile Readiness Alert */}
+      {!isLoading && readiness && !readiness.readyToApply && (
         <div className="bg-[#FFFBEB] border border-[#FDE68A] rounded p-4 sm:p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div className="flex items-start gap-3">
             <span className="material-symbols-outlined text-[#D97706] !text-2xl shrink-0 mt-0.5">
@@ -76,10 +136,12 @@ export const CandidateDashboardPage: React.FC = () => {
             </span>
             <div>
               <h3 className="font-headline font-semibold text-sm text-[#92400E]">
-                Complete Your Profile to Unlock Verified Applications
+                Complete Required Profile Items Before Applying
               </h3>
               <p className="text-xs text-[#B45309] mt-0.5">
-                Employers require verified education, at least 3 skills, and a uploaded resume snapshot before accepting submissions.
+                Missing requirements:{' '}
+                <span className="font-semibold">{readiness.missingRequirements.join(', ') || 'Requirements incomplete'}</span>.
+                You must have your full name, at least one education record, at least one skill, and an active resume before submitting applications.
               </p>
             </div>
           </div>
@@ -92,12 +154,12 @@ export const CandidateDashboardPage: React.FC = () => {
       )}
 
       {/* Metrics Row */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
         <Card>
           <CardBody className="p-4 sm:p-5 flex items-center justify-between">
             <div>
               <p className="text-xs font-medium text-slate-muted uppercase tracking-wider">
-                Active Applications
+                Total Applications
               </p>
               <h2 className="font-headline font-bold text-2xl text-slate-text mt-1">
                 {isLoading ? <Skeleton width="40px" height="28px" /> : applications.length}
@@ -113,31 +175,15 @@ export const CandidateDashboardPage: React.FC = () => {
           <CardBody className="p-4 sm:p-5 flex items-center justify-between">
             <div>
               <p className="text-xs font-medium text-slate-muted uppercase tracking-wider">
-                Matched Openings
-              </p>
-              <h2 className="font-headline font-bold text-2xl text-slate-text mt-1">
-                {isLoading ? <Skeleton width="40px" height="28px" /> : matchedJobs.length}
-              </h2>
-            </div>
-            <div className="w-10 h-10 rounded bg-secondary-container text-secondary-dark flex items-center justify-center">
-              <span className="material-symbols-outlined !text-xl">auto_awesome</span>
-            </div>
-          </CardBody>
-        </Card>
-
-        <Card>
-          <CardBody className="p-4 sm:p-5 flex items-center justify-between">
-            <div>
-              <p className="text-xs font-medium text-slate-muted uppercase tracking-wider">
                 Profile Readiness
               </p>
-              <h2 className="font-headline font-bold text-2xl text-slate-text mt-1">
+              <h2 className="font-headline font-bold text-xl text-slate-text mt-1">
                 {isLoading ? (
                   <Skeleton width="50px" height="28px" />
-                ) : isProfileComplete ? (
-                  <span className="text-primary text-xl">100% Ready</span>
+                ) : readiness?.readyToApply ? (
+                  <span className="text-primary">Ready to Apply</span>
                 ) : (
-                  <span className="text-[#D97706] text-xl">Action Needed</span>
+                  <span className="text-[#D97706]">Action Needed</span>
                 )}
               </h2>
             </div>
@@ -146,19 +192,57 @@ export const CandidateDashboardPage: React.FC = () => {
             </div>
           </CardBody>
         </Card>
+
+        <Card>
+          <CardBody className="p-4 sm:p-5 flex items-center justify-between">
+            <div>
+              <p className="text-xs font-medium text-slate-muted uppercase tracking-wider">
+                Active Resume
+              </p>
+              <h2 className="font-headline font-bold text-sm text-slate-text mt-2 truncate max-w-[140px]">
+                {isLoading ? (
+                  <Skeleton width="80px" height="20px" />
+                ) : resume ? (
+                  resume.originalFilename
+                ) : (
+                  <span className="text-slate-muted font-normal">No Resume Uploaded</span>
+                )}
+              </h2>
+            </div>
+            <div className="w-10 h-10 rounded bg-[#F2F5F3] border border-outline-warm text-slate-text flex items-center justify-center">
+              <span className="material-symbols-outlined !text-xl">picture_as_pdf</span>
+            </div>
+          </CardBody>
+        </Card>
+
+        <Card>
+          <CardBody className="p-4 sm:p-5 flex items-center justify-between">
+            <div>
+              <p className="text-xs font-medium text-slate-muted uppercase tracking-wider">
+                Unread Alerts
+              </p>
+              <h2 className="font-headline font-bold text-2xl text-slate-text mt-1">
+                {isLoading ? <Skeleton width="30px" height="28px" /> : notifications?.unreadCount ?? 0}
+              </h2>
+            </div>
+            <div className="w-10 h-10 rounded bg-[#F2F5F3] border border-outline-warm text-slate-text flex items-center justify-center">
+              <span className="material-symbols-outlined !text-xl">notifications</span>
+            </div>
+          </CardBody>
+        </Card>
       </div>
 
-      {/* Main Content: Recent Applications & Matched Roles */}
+      {/* Main Content Area */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Left 2 Cols: Applications */}
+        {/* Recent Applications (2 cols) */}
         <div className="lg:col-span-2 space-y-4">
           <Card>
-            <CardHeader className="flex items-center justify-between">
+            <CardHeader className="flex items-center justify-between border-b border-outline-warm py-4 px-6">
               <div>
                 <h3 className="font-headline font-semibold text-base text-slate-text">
                   Recent Applications
                 </h3>
-                <p className="text-xs text-slate-muted">Real-time status updates from employers</p>
+                <p className="text-xs text-slate-muted">Your active and submitted application statuses</p>
               </div>
               <Link to="/candidate/applications">
                 <Button variant="ghost" size="sm">
@@ -169,12 +253,12 @@ export const CandidateDashboardPage: React.FC = () => {
             <CardBody className="p-0">
               {isLoading ? (
                 <div className="p-4 space-y-3">
-                  <Skeleton height="36px" />
-                  <Skeleton height="36px" />
+                  <Skeleton height="40px" />
+                  <Skeleton height="40px" />
                 </div>
               ) : applications.length === 0 ? (
                 <div className="p-8 text-center text-xs text-slate-muted">
-                  You haven't submitted any applications yet.{' '}
+                  You have not submitted any applications yet.{' '}
                   <Link to="/jobs" className="text-primary underline">
                     Browse open roles
                   </Link>
@@ -187,15 +271,20 @@ export const CandidateDashboardPage: React.FC = () => {
                         <th className="px-4 py-3">Role & Company</th>
                         <th className="px-4 py-3">Applied</th>
                         <th className="px-4 py-3">Status</th>
-                        <th className="px-4 py-3 text-right">Action</th>
+                        <th className="px-4 py-3 text-right">Actions</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-outline-warm/70">
                       {applications.map((app) => (
-                        <tr key={app.id} className="hover:bg-[#F9FAF9]">
+                        <tr key={app.applicationId} className="hover:bg-[#F9FAF9]">
                           <td className="px-4 py-3">
-                            <div className="font-medium text-slate-text">{app.jobTitle}</div>
-                            <div className="text-xs text-slate-muted">{app.companyName}</div>
+                            <Link
+                              to={`/candidate/applications/${app.applicationId}`}
+                              className="font-medium text-slate-text hover:text-primary hover:underline"
+                            >
+                              {app.jobTitle || `Job #${app.jobId}`}
+                            </Link>
+                            <div className="text-xs text-slate-muted">{app.companyName || 'Company'}</div>
                           </td>
                           <td className="px-4 py-3 text-xs text-slate-muted whitespace-nowrap">
                             {new Date(app.appliedAt).toLocaleDateString()}
@@ -203,15 +292,23 @@ export const CandidateDashboardPage: React.FC = () => {
                           <td className="px-4 py-3">
                             <StatusBadge status={app.status} size="sm" />
                           </td>
-                          <td className="px-4 py-3 text-right">
-                            {app.status !== 'WITHDRAWN' && app.status !== 'REJECTED' && (
-                              <button
-                                onClick={() => handleWithdraw(app.id)}
-                                className="text-xs text-slate-muted hover:text-status-rejected transition-colors font-medium underline"
-                              >
-                                Withdraw
-                              </button>
-                            )}
+                          <td className="px-4 py-3 text-right whitespace-nowrap">
+                            <div className="flex items-center justify-end gap-2">
+                              <Link to={`/candidate/applications/${app.applicationId}`}>
+                                <Button variant="ghost" size="sm" className="text-xs">
+                                  Details
+                                </Button>
+                              </Link>
+                              {isWithdrawable(app.status) && (
+                                <button
+                                  type="button"
+                                  onClick={() => setWithdrawingApp(app)}
+                                  className="text-xs text-slate-muted hover:text-rose-600 transition-colors font-medium underline"
+                                >
+                                  Withdraw
+                                </button>
+                              )}
+                            </div>
                           </td>
                         </tr>
                       ))}
@@ -223,29 +320,29 @@ export const CandidateDashboardPage: React.FC = () => {
           </Card>
         </div>
 
-        {/* Right 1 Col: Matched Jobs Preview */}
+        {/* Discovery & Navigation (1 col) */}
         <div className="space-y-4">
           <Card>
-            <CardHeader className="flex items-center justify-between">
+            <CardHeader className="flex items-center justify-between border-b border-outline-warm py-4 px-6">
               <h3 className="font-headline font-semibold text-base text-slate-text">
-                Top Matched Jobs
+                Explore Open Roles
               </h3>
-              <Link to="/candidate/jobs" className="text-xs text-primary font-medium hover:underline">
-                Explore All
+              <Link to="/jobs" className="text-xs text-primary font-medium hover:underline">
+                View All
               </Link>
             </CardHeader>
             <CardBody className="p-4 space-y-3">
               {isLoading ? (
                 <div className="space-y-3">
-                  <Skeleton height="48px" />
-                  <Skeleton height="48px" />
+                  <Skeleton height="56px" />
+                  <Skeleton height="56px" />
                 </div>
-              ) : matchedJobs.length === 0 ? (
+              ) : recentJobs.length === 0 ? (
                 <div className="text-xs text-slate-muted text-center py-4">
-                  Complete your profile skills to view personalized matches.
+                  No active job postings found.
                 </div>
               ) : (
-                matchedJobs.map((job) => (
+                recentJobs.map((job) => (
                   <div
                     key={job.id}
                     className="p-3 rounded border border-outline-warm hover:border-primary/40 transition-colors cursor-pointer"
@@ -255,25 +352,106 @@ export const CandidateDashboardPage: React.FC = () => {
                       <h4 className="font-semibold text-xs text-slate-text leading-tight hover:text-primary">
                         {job.title}
                       </h4>
-                      {job.matchScore !== undefined && (
-                        <span className="text-[10px] font-bold text-primary px-1.5 py-0.5 rounded bg-primary-tint shrink-0">
-                          {Math.round(job.matchScore)}%
-                        </span>
-                      )}
+                      <span className="text-[10px] font-mono text-slate-muted uppercase shrink-0">
+                        {job.jobType || job.employmentType}
+                      </span>
                     </div>
-                    <p className="text-[11px] text-slate-muted mt-0.5">{job.companyName}</p>
-                    <div className="flex items-center gap-2 mt-2 text-[10px] text-slate-muted font-mono">
-                      <span>{job.jobType}</span>
+                    <p className="text-[11px] text-slate-muted mt-0.5">{job.company?.name || job.companyName}</p>
+                    <div className="flex items-center gap-2 mt-2 text-[10px] text-slate-muted">
+                      <span className="flex items-center gap-0.5">
+                        <span className="material-symbols-outlined !text-[12px]">location_on</span>
+                        {job.location}
+                      </span>
                       <span>•</span>
-                      <span>{job.location}</span>
+                      <span>{job.workMode}</span>
                     </div>
                   </div>
                 ))
               )}
             </CardBody>
           </Card>
+
+          {/* Quick Links Card */}
+          <Card>
+            <CardBody className="p-4 space-y-2">
+              <p className="text-xs font-medium text-slate-muted uppercase tracking-wider mb-2">
+                Quick Actions
+              </p>
+              <Link
+                to="/candidate/profile"
+                className="flex items-center justify-between p-2 rounded hover:bg-[#F4F6F4] text-xs text-slate-text font-medium transition-colors"
+              >
+                <span className="flex items-center gap-2">
+                  <span className="material-symbols-outlined !text-lg text-primary">school</span>
+                  Manage Education & Skills
+                </span>
+                <span className="material-symbols-outlined !text-sm text-slate-muted">arrow_forward</span>
+              </Link>
+              <Link
+                to="/candidate/notifications"
+                className="flex items-center justify-between p-2 rounded hover:bg-[#F4F6F4] text-xs text-slate-text font-medium transition-colors"
+              >
+                <span className="flex items-center gap-2">
+                  <span className="material-symbols-outlined !text-lg text-primary">notifications</span>
+                  View Notifications
+                </span>
+                <span className="material-symbols-outlined !text-sm text-slate-muted">arrow_forward</span>
+              </Link>
+              <Link
+                to="/companies"
+                className="flex items-center justify-between p-2 rounded hover:bg-[#F4F6F4] text-xs text-slate-text font-medium transition-colors"
+              >
+                <span className="flex items-center gap-2">
+                  <span className="material-symbols-outlined !text-lg text-primary">business</span>
+                  Browse Top Employers
+                </span>
+                <span className="material-symbols-outlined !text-sm text-slate-muted">arrow_forward</span>
+              </Link>
+            </CardBody>
+          </Card>
         </div>
       </div>
+
+      {/* Withdrawal Confirmation Modal */}
+      <Modal
+        isOpen={!!withdrawingApp}
+        onClose={() => setWithdrawingApp(null)}
+        title="Confirm Application Withdrawal"
+      >
+        <div className="space-y-4">
+          <p className="text-xs text-slate-text leading-relaxed">
+            Are you sure you want to withdraw your application for{' '}
+            <span className="font-semibold text-slate-text">{withdrawingApp?.jobTitle}</span> at{' '}
+            <span className="font-semibold text-slate-text">{withdrawingApp?.companyName}</span>?
+          </p>
+          <div className="p-3 bg-amber-50 border border-amber-200 rounded text-xs text-amber-800 space-y-1">
+            <p className="font-semibold">Important Notes:</p>
+            <ul className="list-disc list-inside space-y-0.5 text-[11px]">
+              <li>This action will permanently move your application to WITHDRAWN status.</li>
+              <li>You will not be able to re-apply to this specific job posting.</li>
+            </ul>
+          </div>
+          <div className="flex justify-end gap-2 pt-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setWithdrawingApp(null)}
+              disabled={isWithdrawing}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="primary"
+              size="sm"
+              onClick={handleWithdrawConfirm}
+              isLoading={isWithdrawing}
+              className="bg-rose-600 hover:bg-rose-700 text-white border-none"
+            >
+              Confirm Withdrawal
+            </Button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 };

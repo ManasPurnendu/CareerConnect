@@ -21,6 +21,7 @@ import org.springframework.test.web.servlet.MvcResult;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -364,5 +365,25 @@ class CandidateProjectControllerTest {
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.success").value(false))
                 .andExpect(jsonPath("$.errorCode").value("FORBIDDEN"));
+    }
+
+    @Test
+    @DisplayName("P4.6-13: Authenticated candidate can GET own project list")
+    void shouldGetOwnProjectListSuccessfully() throws Exception {
+        UserAuth user = registerUserAndGetAuth("candidate.projlist@example.com", Role.CANDIDATE, "Proj User");
+
+        CreateProjectRequest proj1 = new CreateProjectRequest("Project Alpha", "First project", "https://example.com/alpha", 1);
+        CreateProjectRequest proj2 = new CreateProjectRequest("Project Beta", "Second project", "https://example.com/beta", 2);
+        createProjectRecord(user.token(), proj1);
+        createProjectRecord(user.token(), proj2);
+
+        mockMvc.perform(get("/api/candidate/projects")
+                        .header("Authorization", "Bearer " + user.token()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data").isArray())
+                .andExpect(jsonPath("$.data.length()").value(2))
+                .andExpect(jsonPath("$.data[0].title").value("Project Alpha"))
+                .andExpect(jsonPath("$.data[1].title").value("Project Beta"));
     }
 }
