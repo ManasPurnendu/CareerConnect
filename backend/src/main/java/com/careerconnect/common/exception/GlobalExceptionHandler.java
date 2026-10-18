@@ -123,6 +123,13 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
     }
 
+    @ExceptionHandler(org.springframework.web.HttpRequestMethodNotSupportedException.class)
+    public ResponseEntity<ApiErrorResponse> handleMethodNotSupported(org.springframework.web.HttpRequestMethodNotSupportedException ex) {
+        log.warn("Method not allowed: {}", ex.getMessage());
+        ApiErrorResponse error = ApiErrorResponse.of("HTTP method not supported for this endpoint: " + ex.getMethod(), ErrorCode.VALIDATION_FAILED.getCode());
+        return ResponseEntity.status(HttpStatus.METHOD_NOT_ALLOWED).body(error);
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiErrorResponse> handleUnhandledException(Exception ex) {
         log.error("Unhandled internal server error: ", ex);
