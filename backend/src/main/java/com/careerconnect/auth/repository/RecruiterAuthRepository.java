@@ -58,4 +58,36 @@ public class RecruiterAuthRepository {
             return Optional.empty();
         }
     }
+
+    public Optional<Long> findCompanyIdByRecruiterId(Long recruiterId) {
+        if (recruiterId == null) {
+            return Optional.empty();
+        }
+        String sql = "SELECT company_id FROM recruiters WHERE id = ?";
+        try {
+            Long companyId = jdbcTemplate.queryForObject(sql, Long.class, recruiterId);
+            return Optional.ofNullable(companyId);
+        } catch (EmptyResultDataAccessException e) {
+            return Optional.empty();
+        }
+    }
+
+    public boolean updateCompanyId(Long recruiterId, Long companyId) {
+        if (recruiterId == null) {
+            return false;
+        }
+        String sql = "UPDATE recruiters SET company_id = ?, updated_at = ? WHERE id = ?";
+        Timestamp now = Timestamp.from(Instant.now());
+        int rows = jdbcTemplate.update(sql, companyId, now, recruiterId);
+        return rows > 0;
+    }
+
+    public boolean existsById(Long recruiterId) {
+        if (recruiterId == null) {
+            return false;
+        }
+        String sql = "SELECT COUNT(*) FROM recruiters WHERE id = ?";
+        Integer count = jdbcTemplate.queryForObject(sql, Integer.class, recruiterId);
+        return count != null && count > 0;
+    }
 }

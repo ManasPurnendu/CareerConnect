@@ -80,6 +80,9 @@ public class SecurityConfig {
                         // Candidate Protected Endpoints (Phase 4 & 5)
                         .requestMatchers("/api/candidate/**").hasRole("CANDIDATE")
 
+                        // Recruiter Protected Endpoints (Phase 6)
+                        .requestMatchers("/api/recruiter/**").hasRole("RECRUITER")
+
                         // All other endpoints require authentication
                         .anyRequest().authenticated()
                 )
