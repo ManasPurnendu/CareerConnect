@@ -26,7 +26,7 @@ public enum ApplicationStatus {
     );
 
     private static final Map<ApplicationStatus, Set<ApplicationStatus>> ALLOWED_TRANSITIONS = Map.of(
-            APPLIED, Set.of(UNDER_REVIEW, WITHDRAWN),
+            APPLIED, Set.of(UNDER_REVIEW, SHORTLISTED, REJECTED, WITHDRAWN),
             UNDER_REVIEW, Set.of(SHORTLISTED, REJECTED, WITHDRAWN),
             SHORTLISTED, Set.of(INTERVIEW, REJECTED, WITHDRAWN),
             INTERVIEW, Set.of(SELECTED, REJECTED, WITHDRAWN),

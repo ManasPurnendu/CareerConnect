@@ -239,6 +239,20 @@ public class ApplicationRepository {
         return jdbcTemplate.update(sql, newStatus.name(), timestamp, applicationId, candidateId);
     }
 
+    public int updateStatusForCompany(Long applicationId, Long companyId, ApplicationStatus newStatus, Instant updatedAt) {
+        if (applicationId == null || companyId == null || newStatus == null) {
+            return 0;
+        }
+        String sql = """
+                UPDATE applications
+                SET status = ?, updated_at = ?
+                WHERE id = ?
+                  AND job_id IN (SELECT id FROM jobs WHERE company_id = ? AND deleted_at IS NULL)
+                """;
+        Timestamp timestamp = Timestamp.from(updatedAt != null ? updatedAt : Instant.now());
+        return jdbcTemplate.update(sql, newStatus.name(), timestamp, applicationId, companyId);
+    }
+
     public record ApplicationStatusHistoryEntity(
             Long id,
             Long applicationId,
@@ -351,5 +365,124 @@ public class ApplicationRepository {
                 rs.getString("job_title"),
                 rs.getString("company_name")
         );
+    }
+
+    public record ApplicantSummaryEntity(
+            Long applicationId,
+            Long jobId,
+            Long candidateId,
+            ApplicationStatus status,
+            Instant appliedAt,
+            String candidateSnapshotJson
+    ) {}
+
+    public List<ApplicantSummaryEntity> findApplicantsByJobIdAndCompanyId(
+            Long jobId, Long companyId, ApplicationStatus statusFilter, int limit, int offset) {
+        if (jobId == null || companyId == null) {
+            return List.of();
+        }
+        StringBuilder sql = new StringBuilder("""
+                SELECT a.id AS application_id, a.job_id, a.candidate_id, a.status,
+                       a.applied_at, a.candidate_snapshot
+                FROM applications a
+                JOIN jobs j ON a.job_id = j.id
+                WHERE a.job_id = ?
+                  AND j.company_id = ?
+                  AND j.deleted_at IS NULL
+                """);
+        List<Object> params = new java.util.ArrayList<>();
+        params.add(jobId);
+        params.add(companyId);
+
+        if (statusFilter != null) {
+            sql.append(" AND a.status = ?");
+            params.add(statusFilter.name());
+        }
+
+        sql.append(" ORDER BY a.applied_at DESC, a.id DESC LIMIT ? OFFSET ?");
+        params.add(limit);
+        params.add(offset);
+
+        return jdbcTemplate.query(sql.toString(), (rs, rowNum) -> new ApplicantSummaryEntity(
+                rs.getLong("application_id"),
+                rs.getLong("job_id"),
+                rs.getLong("candidate_id"),
+                ApplicationStatus.valueOf(rs.getString("status")),
+                DateTimeUtils.toInstant(rs.getTimestamp("applied_at")),
+                rs.getString("candidate_snapshot")
+        ), params.toArray());
+    }
+
+    public long countApplicantsByJobIdAndCompanyId(Long jobId, Long companyId, ApplicationStatus statusFilter) {
+        if (jobId == null || companyId == null) {
+            return 0L;
+        }
+        StringBuilder sql = new StringBuilder("""
+                SELECT COUNT(*)
+                FROM applications a
+                JOIN jobs j ON a.job_id = j.id
+                WHERE a.job_id = ?
+                  AND j.company_id = ?
+                  AND j.deleted_at IS NULL
+                """);
+        List<Object> params = new java.util.ArrayList<>();
+        params.add(jobId);
+        params.add(companyId);
+
+        if (statusFilter != null) {
+            sql.append(" AND a.status = ?");
+            params.add(statusFilter.name());
+        }
+
+        Long count = jdbcTemplate.queryForObject(sql.toString(), Long.class, params.toArray());
+        return count != null ? count : 0L;
+    }
+
+    public record RecruiterApplicantDetailEntity(
+            Long applicationId,
+            Long jobId,
+            String jobTitle,
+            Long candidateId,
+            Long candidateUserId,
+            ApplicationStatus status,
+            String coverLetter,
+            Instant appliedAt,
+            String candidateSnapshotJson,
+            String resumeSnapshotJson
+    ) {}
+
+    public Optional<RecruiterApplicantDetailEntity> findApplicantDetailByIdAndCompanyId(Long applicationId, Long companyId) {
+        if (applicationId == null || companyId == null) {
+            return Optional.empty();
+        }
+        String sql = """
+                SELECT a.id AS application_id, a.job_id, j.title AS job_title, a.candidate_id,
+                       c.user_id AS candidate_user_id,
+                       a.status, a.cover_letter, a.applied_at,
+                       a.candidate_snapshot, a.resume_snapshot
+                FROM applications a
+                JOIN jobs j ON a.job_id = j.id
+                JOIN candidates c ON a.candidate_id = c.id
+                WHERE a.id = ?
+                  AND j.company_id = ?
+                  AND j.deleted_at IS NULL
+                """;
+        try {
+            RecruiterApplicantDetailEntity entity = jdbcTemplate.queryForObject(sql, (rs, rowNum) -> new RecruiterApplicantDetailEntity(
+                    rs.getLong("application_id"),
+                    rs.getLong("job_id"),
+                    rs.getString("job_title"),
+                    rs.getLong("candidate_id"),
+                    rs.getLong("candidate_user_id"),
+                    ApplicationStatus.valueOf(rs.getString("status")),
+                    rs.getString("cover_letter"),
+                    DateTimeUtils.toInstant(rs.getTimestamp("applied_at")),
+                    rs.getString("candidate_snapshot"),
+                    rs.getString("resume_snapshot")
+            ), applicationId, companyId);
+            return Optional.ofNullable(entity);
+        } catch (EmptyResultDataAccessException e) {
+            return Optional.empty();
+        }
     }
 }

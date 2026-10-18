@@ -19,12 +19,14 @@ class ApplicationStatusTest {
     // ─── A. Valid Transitions ─────────────────────────────────────────────────
 
     @Test
-    @DisplayName("P5.3-A1: APPLIED can transition to UNDER_REVIEW and WITHDRAWN")
+    @DisplayName("P5.3-A1: APPLIED can transition to UNDER_REVIEW, SHORTLISTED, REJECTED, and WITHDRAWN")
     void applied_validTransitions() {
         assertThat(ApplicationStatus.APPLIED.isValidTransition(ApplicationStatus.UNDER_REVIEW)).isTrue();
+        assertThat(ApplicationStatus.APPLIED.isValidTransition(ApplicationStatus.SHORTLISTED)).isTrue();
+        assertThat(ApplicationStatus.APPLIED.isValidTransition(ApplicationStatus.REJECTED)).isTrue();
         assertThat(ApplicationStatus.APPLIED.isValidTransition(ApplicationStatus.WITHDRAWN)).isTrue();
         assertThat(ApplicationStatus.APPLIED.getAllowedNextStatuses())
-                .containsExactlyInAnyOrder(ApplicationStatus.UNDER_REVIEW, ApplicationStatus.WITHDRAWN);
+                .containsExactlyInAnyOrder(ApplicationStatus.UNDER_REVIEW, ApplicationStatus.SHORTLISTED, ApplicationStatus.REJECTED, ApplicationStatus.WITHDRAWN);
     }
 
     @Test
@@ -60,12 +62,10 @@ class ApplicationStatusTest {
     // ─── B. Invalid Transitions ───────────────────────────────────────────────
 
     @Test
-    @DisplayName("P5.3-B1: APPLIED cannot transition directly to SELECTED, REJECTED, or INTERVIEW")
+    @DisplayName("P5.3-B1: APPLIED cannot transition directly to SELECTED or INTERVIEW")
     void applied_invalidTransitions() {
         assertThat(ApplicationStatus.APPLIED.isValidTransition(ApplicationStatus.SELECTED)).isFalse();
-        assertThat(ApplicationStatus.APPLIED.isValidTransition(ApplicationStatus.REJECTED)).isFalse();
         assertThat(ApplicationStatus.APPLIED.isValidTransition(ApplicationStatus.INTERVIEW)).isFalse();
-        assertThat(ApplicationStatus.APPLIED.isValidTransition(ApplicationStatus.SHORTLISTED)).isFalse();
     }
 
     @Test
