@@ -10,8 +10,9 @@ export interface AuthContextType {
   isLoading: boolean;
   login: (credentials: LoginPayload) => Promise<AuthUser>;
   register: (payload: RegisterPayload) => Promise<AuthUser>;
-  logout: () => void;
+  logout: () => Promise<void>;
   setUser: React.Dispatch<React.SetStateAction<AuthUser | null>>;
+  refreshCurrentUser: () => Promise<AuthUser | null>;
 }
 
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -26,8 +27,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     setIsLoading(true);
     try {
       const response = await authApi.login(credentials);
-      setToken(response.token);
-      setAuthToken(response.token);
+      const jwt = response.accessToken;
+      setToken(jwt);
+      setAuthToken(jwt);
       setUser(response.user);
       return response.user;
     } finally {
@@ -39,8 +41,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     setIsLoading(true);
     try {
       const response = await authApi.register(payload);
-      setToken(response.token);
-      setAuthToken(response.token);
+      const jwt = response.accessToken;
+      setToken(jwt);
+      setAuthToken(jwt);
       setUser(response.user);
       return response.user;
     } finally {
@@ -48,11 +51,30 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   }, []);
 
-  const logout = useCallback(() => {
-    authApi.logout();
-    setToken(null);
-    setUser(null);
+  const logout = useCallback(async () => {
+    try {
+      await authApi.logout();
+    } finally {
+      setToken(null);
+      setAuthToken(null);
+      setUser(null);
+    }
   }, []);
+
+  const refreshCurrentUser = useCallback(async (): Promise<AuthUser | null> => {
+    if (!token) return null;
+    try {
+      const currentUser = await authApi.getCurrentUser();
+      setUser(currentUser);
+      return currentUser;
+    } catch {
+      // If /me fails, clear in-memory state
+      setToken(null);
+      setAuthToken(null);
+      setUser(null);
+      return null;
+    }
+  }, [token]);
 
   const value: AuthContextType = {
     user,
@@ -63,6 +85,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     register,
     logout,
     setUser,
+    refreshCurrentUser,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

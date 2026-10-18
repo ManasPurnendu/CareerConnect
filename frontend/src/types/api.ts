@@ -5,13 +5,22 @@
 
 export type Role = 'CANDIDATE' | 'RECRUITER' | 'ADMIN';
 
-export type JobType = 'FULL_TIME' | 'PART_TIME' | 'INTERNSHIP' | 'CONTRACT';
+export type JobType =
+  | 'INTERNSHIP'
+  | 'FULL_TIME'
+  | 'PART_TIME'
+  | 'APPRENTICESHIP'
+  | 'TRAINEE';
 
-export type WorkMode = 'REMOTE' | 'HYBRID' | 'ON_SITE';
+export type WorkMode = 'ONSITE' | 'HYBRID' | 'REMOTE';
 
-export type ExperienceLevel = 'FRESHER' | 'INTERN' | 'JUNIOR' | 'MID';
+export type ExperienceLevel =
+  | 'INTERNSHIP'
+  | 'FRESHER'
+  | 'ZERO_TO_ONE_YEARS'
+  | 'ONE_TO_TWO_YEARS';
 
-export type JobStatus = 'DRAFT' | 'PUBLISHED' | 'CLOSED' | 'ARCHIVED';
+export type JobStatus = 'DRAFT' | 'ACTIVE' | 'CLOSED' | 'ARCHIVED';
 
 export type ApplicationStatus =
   | 'APPLIED'
@@ -22,9 +31,17 @@ export type ApplicationStatus =
   | 'REJECTED'
   | 'WITHDRAWN';
 
+export interface PaginationMetadata {
+  page: number;
+  size: number;
+  totalElements: number;
+  totalPages: number;
+}
+
 export interface ApiResponse<T> {
   success: boolean;
   data: T;
+  pagination?: PaginationMetadata;
   message: string | null;
 }
 
@@ -35,38 +52,124 @@ export interface ApiErrorResponse {
   errorCode: string;
 }
 
-export interface PageMetadata {
-  page: number;
-  size: number;
+export interface PageMetadataCompat {
+  pageNumber: number;
+  pageSize: number;
   totalElements: number;
   totalPages: number;
-  first: boolean;
-  last: boolean;
 }
 
 export interface PagedResponse<T> {
-  content: T[];
-  page: PageMetadata;
+  data: T[];
+  pagination?: PaginationMetadata;
+  // Aliases for compatibility
+  content?: T[];
+  page?: PageMetadataCompat;
 }
 
 export interface AuthUser {
   id: number;
   email: string;
   role: Role;
-  isActive: boolean;
   fullName?: string;
+  candidateId?: number;
+  recruiterId?: number;
+  companyId?: number;
+  isActive?: boolean;
 }
 
 export interface AuthResponseData {
-  token: string;
+  accessToken: string;
+  tokenType: string;
+  expiresAt: string;
   user: AuthUser;
 }
+
+export interface SkillDto {
+  id?: number;
+  name: string;
+}
+
+export interface CompanySummaryDto {
+  id: number;
+  name: string;
+  industry?: string;
+  location?: string;
+  logoUrl?: string | null;
+  website?: string;
+  description?: string;
+  companySize?: string;
+  isVerified?: boolean;
+  activeJobCount?: number;
+}
+
+export interface CompanyDetailDto {
+  id: number;
+  name: string;
+  industry?: string;
+  location?: string;
+  logoUrl?: string | null;
+  website?: string;
+  description?: string;
+  companySize?: string;
+  isVerified?: boolean;
+  activeJobCount?: number;
+  activeJobs: JobSummaryDto[];
+  createdAt?: string;
+}
+
+export interface JobSummaryDto {
+  id: number;
+  title: string;
+  company?: CompanySummaryDto;
+  companyName?: string;
+  jobType?: JobType;
+  employmentType?: JobType;
+  experienceLevel: ExperienceLevel;
+  workMode: WorkMode;
+  location: string;
+  salaryMinLpa?: number;
+  salaryMaxLpa?: number;
+  salaryCurrency?: string;
+  applicationDeadline?: string;
+  status: JobStatus;
+  skills: (string | SkillDto)[];
+  createdAt: string;
+  matchScore?: number;
+}
+
+export interface JobDetailDto {
+  id: number;
+  title: string;
+  description?: string;
+  responsibilities?: string;
+  requirements?: string;
+  company: CompanySummaryDto;
+  jobType: JobType;
+  employmentType?: JobType;
+  experienceLevel: ExperienceLevel;
+  workMode: WorkMode;
+  location: string;
+  salaryMinLpa?: number;
+  salaryMaxLpa?: number;
+  salaryCurrency?: string;
+  applicationDeadline?: string;
+  status: JobStatus;
+  skills: (string | SkillDto)[];
+  createdAt: string;
+  updatedAt?: string;
+  applicationCount?: number;
+}
+
+// Aliases for component convenience
+export type Job = JobSummaryDto;
+export type Company = CompanySummaryDto;
 
 export interface CandidateProfile {
   id: number;
   userId: number;
   fullName: string;
-  headline: string;
+  headline?: string;
   phone?: string;
   location?: string;
   bio?: string;
@@ -77,42 +180,6 @@ export interface CandidateProfile {
   resumeUrl?: string;
   createdAt: string;
   updatedAt: string;
-}
-
-export interface Company {
-  id: number;
-  name: string;
-  description?: string;
-  website?: string;
-  location?: string;
-  logoUrl?: string;
-  industry?: string;
-  size?: string;
-  isVerified: boolean;
-  createdAt?: string;
-}
-
-export interface Job {
-  id: number;
-  title: string;
-  companyId: number;
-  companyName: string;
-  companyLogoUrl?: string;
-  description: string;
-  location: string;
-  jobType: JobType;
-  workMode: WorkMode;
-  experienceLevel: ExperienceLevel;
-  minSalary?: number;
-  maxSalary?: number;
-  currency?: string;
-  requiredSkills: string[];
-  status: JobStatus;
-  openPositions?: number;
-  expiresAt?: string;
-  createdAt: string;
-  updatedAt: string;
-  matchScore?: number;
 }
 
 export interface Application {

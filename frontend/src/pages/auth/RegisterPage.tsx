@@ -13,12 +13,16 @@ export const RegisterPage: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
-  const [companyName, setCompanyName] = useState('');
   const [error, setError] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+
+    if (!fullName.trim()) {
+      setError('Please provide your full name.');
+      return;
+    }
 
     if (!email || !password) {
       setError('Please provide an email and password.');
@@ -30,18 +34,12 @@ export const RegisterPage: React.FC = () => {
       return;
     }
 
-    if (role === 'RECRUITER' && !companyName) {
-      setError('Company name is required for recruiter registration.');
-      return;
-    }
-
     try {
       const user = await register({
-        email,
+        email: email.trim(),
         password,
         role,
-        fullName: fullName || undefined,
-        companyName: role === 'RECRUITER' ? companyName : undefined,
+        fullName: fullName.trim(),
       });
 
       if (user.role === 'CANDIDATE') {
@@ -125,23 +123,12 @@ export const RegisterPage: React.FC = () => {
             <Input
               label={role === 'CANDIDATE' ? 'Full Name' : 'Contact Person Name'}
               type="text"
+              required
               value={fullName}
               onChange={(e) => setFullName(e.target.value)}
               placeholder="e.g. Alex Johnson"
               leftIcon={<span className="material-symbols-outlined !text-[18px]">person</span>}
             />
-
-            {role === 'RECRUITER' && (
-              <Input
-                label="Company Name"
-                type="text"
-                required
-                value={companyName}
-                onChange={(e) => setCompanyName(e.target.value)}
-                placeholder="e.g. TechCorp Solutions"
-                leftIcon={<span className="material-symbols-outlined !text-[18px]">business</span>}
-              />
-            )}
 
             <Input
               label="Email Address"

@@ -17,8 +17,9 @@ const renderWithAuth = (
     isLoading: false,
     login: async () => user!,
     register: async () => user!,
-    logout: () => {},
+    logout: async () => {},
     setUser: () => {},
+    refreshCurrentUser: async () => user,
   };
 
   return render(

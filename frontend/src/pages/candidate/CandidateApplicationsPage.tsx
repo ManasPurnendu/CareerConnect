@@ -22,7 +22,7 @@ export const CandidateApplicationsPage: React.FC = () => {
         const response = await candidateApi.getApplications(page, 10);
         if (response?.content) {
           setApplications(response.content);
-          setTotalPages(response.page.totalPages);
+          setTotalPages(response.page?.totalPages ?? 1);
         }
       } finally {
         setIsLoading(false);

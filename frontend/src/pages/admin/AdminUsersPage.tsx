@@ -20,7 +20,7 @@ export const AdminUsersPage: React.FC = () => {
         const response = await adminApi.getUsers(page, 15);
         if (response?.content) {
           setUsers(response.content);
-          setTotalPages(response.page.totalPages);
+          setTotalPages(response.page?.totalPages ?? 1);
         }
       } finally {
         setIsLoading(false);

@@ -36,14 +36,18 @@ describe('AuthContext and AuthProvider', () => {
 
   it('updates state on successful login and clears on logout', async () => {
     vi.spyOn(authApi, 'login').mockResolvedValueOnce({
-      token: 'jwt-123',
+      accessToken: 'jwt-123',
+      tokenType: 'Bearer',
+      expiresAt: '2026-10-20T00:00:00Z',
       user: {
         id: 1,
         email: 'test@example.com',
         role: 'CANDIDATE',
+        fullName: 'Test Candidate',
         isActive: true,
       },
     });
+    vi.spyOn(authApi, 'logout').mockResolvedValueOnce(undefined);
 
     render(
       <AuthProvider>
@@ -60,7 +64,9 @@ describe('AuthContext and AuthProvider', () => {
 
     fireEvent.click(screen.getByText('Log Out'));
 
-    expect(screen.getByTestId('auth-status')).toHaveTextContent('LOGGED_OUT');
-    expect(screen.getByTestId('user-email')).toHaveTextContent('NONE');
+    await waitFor(() => {
+      expect(screen.getByTestId('auth-status')).toHaveTextContent('LOGGED_OUT');
+      expect(screen.getByTestId('user-email')).toHaveTextContent('NONE');
+    });
   });
 });

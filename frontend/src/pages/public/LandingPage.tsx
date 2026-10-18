@@ -1,26 +1,43 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '../../components/ui/Button';
 import { Badge } from '../../components/ui/Badge';
+import { jobsApi } from '../../api/jobs';
+import type { JobSummaryDto } from '../../types/api';
+import { JobCard } from '../../components/ui/JobCard';
+import { Skeleton } from '../../components/ui/Skeleton';
 
 export const LandingPage: React.FC = () => {
   const [keyword, setKeyword] = useState('');
   const [location, setLocation] = useState('');
+  const [featuredJobs, setFeaturedJobs] = useState<JobSummaryDto[]>([]);
+  const [isLoadingJobs, setIsLoadingJobs] = useState<boolean>(true);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    const loadFeatured = async () => {
+      try {
+        const response = await jobsApi.getPublicJobs({ size: 3 });
+        if (response && response.data) {
+          setFeaturedJobs(response.data);
+        }
+      } catch {
+        // Non-blocking for landing page
+      } finally {
+        setIsLoadingJobs(false);
+      }
+    };
+    loadFeatured();
+  }, []);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     const params = new URLSearchParams();
-    if (keyword) params.set('keyword', keyword);
-    if (location) params.set('location', location);
-    navigate(`/jobs?${params.toString()}`);
+    if (keyword.trim()) params.set('keyword', keyword.trim());
+    if (location.trim()) params.set('location', location.trim());
+    const qString = params.toString();
+    navigate(qString ? `/jobs?${qString}` : '/jobs');
   };
-
-  const sampleRoles = [
-    { title: 'Frontend Engineer (React)', company: 'Nexus Innovations', location: 'Remote', type: 'Full Time', salary: '$80,000 - $95,000' },
-    { title: 'Junior Data Analyst', company: 'Apex Analytics', location: 'Bengaluru / Hybrid', type: 'Full Time', salary: '₹8,00,000 - ₹11,00,000' },
-    { title: 'Software Engineer Intern', company: 'CloudScale Systems', location: 'On-site', type: 'Internship', salary: '$40/hr' },
-  ];
 
   return (
     <div className="flex flex-col gap-12 sm:gap-16 pb-16">
@@ -65,7 +82,7 @@ export const LandingPage: React.FC = () => {
               <span className="material-symbols-outlined text-slate-muted !text-xl">location_on</span>
               <input
                 type="text"
-                placeholder="City, State, or Remote"
+                placeholder="City, State, or 'Remote'"
                 value={location}
                 onChange={(e) => setLocation(e.target.value)}
                 className="w-full bg-transparent text-sm text-slate-text placeholder:text-slate-muted focus:outline-none"
@@ -81,26 +98,30 @@ export const LandingPage: React.FC = () => {
           <div className="flex flex-wrap items-center justify-center gap-2 mt-4 text-xs text-slate-muted">
             <span className="font-medium text-slate-text">Popular Searches:</span>
             <button
-              onClick={() => navigate('/jobs?keyword=React')}
-              className="px-2 py-0.5 rounded bg-white border border-outline-warm hover:border-primary transition-colors"
+              type="button"
+              onClick={() => navigate('/jobs?skills=React')}
+              className="px-2 py-0.5 rounded bg-white border border-outline-warm hover:border-primary transition-colors cursor-pointer"
             >
               React
             </button>
             <button
-              onClick={() => navigate('/jobs?keyword=Python')}
-              className="px-2 py-0.5 rounded bg-white border border-outline-warm hover:border-primary transition-colors"
+              type="button"
+              onClick={() => navigate('/jobs?skills=Java')}
+              className="px-2 py-0.5 rounded bg-white border border-outline-warm hover:border-primary transition-colors cursor-pointer"
             >
-              Python
+              Java
             </button>
             <button
+              type="button"
               onClick={() => navigate('/jobs?workMode=REMOTE')}
-              className="px-2 py-0.5 rounded bg-white border border-outline-warm hover:border-primary transition-colors"
+              className="px-2 py-0.5 rounded bg-white border border-outline-warm hover:border-primary transition-colors cursor-pointer"
             >
               Remote
             </button>
             <button
-              onClick={() => navigate('/jobs?jobType=INTERNSHIP')}
-              className="px-2 py-0.5 rounded bg-white border border-outline-warm hover:border-primary transition-colors"
+              type="button"
+              onClick={() => navigate('/jobs?employmentType=INTERNSHIP')}
+              className="px-2 py-0.5 rounded bg-white border border-outline-warm hover:border-primary transition-colors cursor-pointer"
             >
               Internships
             </button>
@@ -168,45 +189,41 @@ export const LandingPage: React.FC = () => {
             <p className="text-xs text-slate-muted">Freshly published roles welcoming 0–2 years experience</p>
           </div>
           <Link to="/jobs">
-            <Button variant="outline" size="sm" rightIcon={<span className="material-symbols-outlined !text-base">arrow_forward</span>}>
+            <Button
+              variant="outline"
+              size="sm"
+              rightIcon={<span className="material-symbols-outlined !text-base">arrow_forward</span>}
+            >
               View All Jobs
             </Button>
           </Link>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {sampleRoles.map((role, idx) => (
-            <div
-              key={idx}
-              className="bg-white rounded border border-outline-warm p-5 hover:border-primary/40 hover:shadow-subtle transition-all flex flex-col justify-between gap-4"
-            >
-              <div>
-                <span className="text-[11px] font-semibold text-primary uppercase font-mono tracking-wider">
-                  {role.type}
-                </span>
-                <h3 className="font-headline font-semibold text-base text-slate-text mt-1">
-                  {role.title}
-                </h3>
-                <p className="text-xs text-slate-muted mt-0.5">{role.company}</p>
-                <div className="flex items-center gap-3 mt-3 text-xs text-slate-muted">
-                  <span className="flex items-center gap-1">
-                    <span className="material-symbols-outlined !text-[15px]">location_on</span>
-                    {role.location}
-                  </span>
-                  <span className="flex items-center gap-1">
-                    <span className="material-symbols-outlined !text-[15px]">payments</span>
-                    {role.salary}
-                  </span>
-                </div>
-              </div>
-              <Link to="/jobs">
-                <Button variant="outline" size="sm" className="w-full">
-                  Learn More
-                </Button>
-              </Link>
-            </div>
-          ))}
-        </div>
+        {isLoadingJobs ? (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <Skeleton variant="card" />
+            <Skeleton variant="card" />
+            <Skeleton variant="card" />
+          </div>
+        ) : featuredJobs.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {featuredJobs.map((job) => (
+              <JobCard
+                key={job.id}
+                job={job}
+                onView={(j) => navigate(`/jobs/${j.id}`)}
+                onApply={(j) => navigate(`/jobs/${j.id}`)}
+              />
+            ))}
+          </div>
+        ) : (
+          <div className="bg-white rounded border border-outline-warm p-8 text-center text-xs text-slate-muted">
+            No featured jobs found at the moment.{' '}
+            <Link to="/jobs" className="text-primary underline">
+              Browse all jobs
+            </Link>
+          </div>
+        )}
       </section>
 
       {/* Call to action */}

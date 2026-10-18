@@ -17,7 +17,7 @@ export const AdminAuditPage: React.FC = () => {
         const response = await adminApi.getAuditLogs(page, 20);
         if (response?.content) {
           setLogs(response.content);
-          setTotalPages(response.page.totalPages);
+          setTotalPages(response.page?.totalPages ?? 1);
         }
       } finally {
         setIsLoading(false);

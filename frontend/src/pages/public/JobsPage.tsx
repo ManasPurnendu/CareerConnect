@@ -1,19 +1,21 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { jobsApi } from '../../api/jobs';
-import type { Job } from '../../types/api';
+import type { JobSummaryDto, JobType, WorkMode, ExperienceLevel } from '../../types/api';
 import { JobCard } from '../../components/ui/JobCard';
 import { Button } from '../../components/ui/Button';
 import { Pagination } from '../../components/ui/Pagination';
 import { Skeleton } from '../../components/ui/Skeleton';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { ErrorState } from '../../components/ui/ErrorState';
+import { useAuth } from '../../auth/useAuth';
 
 export const JobsPage: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
+  const { isAuthenticated, user } = useAuth();
 
-  const [jobs, setJobs] = useState<Job[]>([]);
+  const [jobs, setJobs] = useState<JobSummaryDto[]>([]);
   const [totalElements, setTotalElements] = useState<number>(0);
   const [totalPages, setTotalPages] = useState<number>(0);
   const [page, setPage] = useState<number>(0);
@@ -21,17 +23,20 @@ export const JobsPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
 
   // Filters state from query params
-  const keywordParam = searchParams.get('keyword') || '';
+  const keywordParam = searchParams.get('keyword') || searchParams.get('q') || '';
   const locationParam = searchParams.get('location') || '';
-  const jobTypeParam = searchParams.get('jobType') || '';
+  const employmentTypeParam = searchParams.get('employmentType') || searchParams.get('jobType') || '';
   const workModeParam = searchParams.get('workMode') || '';
   const expLevelParam = searchParams.get('experienceLevel') || '';
+  const skillsParam = searchParams.get('skills') || '';
+  const sortParam = searchParams.get('sort') || '';
 
   const [keyword, setKeyword] = useState(keywordParam);
   const [location, setLocation] = useState(locationParam);
-  const [jobType, setJobType] = useState(jobTypeParam);
+  const [employmentType, setEmploymentType] = useState(employmentTypeParam);
   const [workMode, setWorkMode] = useState(workModeParam);
   const [experienceLevel, setExperienceLevel] = useState(expLevelParam);
+  const [sort, setSort] = useState(sortParam);
 
   const fetchJobs = useCallback(async () => {
     setIsLoading(true);
@@ -40,29 +45,36 @@ export const JobsPage: React.FC = () => {
       const response = await jobsApi.getPublicJobs({
         keyword: keywordParam || undefined,
         location: locationParam || undefined,
-        jobType: jobTypeParam || undefined,
-        workMode: workModeParam || undefined,
-        experienceLevel: expLevelParam || undefined,
+        employmentType: employmentTypeParam ? (employmentTypeParam as JobType) : undefined,
+        workMode: workModeParam ? (workModeParam as WorkMode) : undefined,
+        experienceLevel: expLevelParam ? (expLevelParam as ExperienceLevel) : undefined,
+        skills: skillsParam || undefined,
+        sort: sortParam || undefined,
         page,
         size: 9,
       });
 
-      if (response && response.content) {
-        setJobs(response.content);
-        setTotalElements(response.page.totalElements);
-        setTotalPages(response.page.totalPages);
+      if (response && response.data) {
+        setJobs(response.data);
+        if (response.pagination) {
+          setTotalElements(response.pagination.totalElements);
+          setTotalPages(response.pagination.totalPages);
+        } else {
+          setTotalElements(response.data.length);
+          setTotalPages(1);
+        }
       } else {
         setJobs([]);
         setTotalElements(0);
         setTotalPages(0);
       }
-    } catch {
-      // If endpoint returns empty or backend error, display friendly message
-      setError('Unable to fetch jobs. Please verify your connection or try again later.');
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Unable to fetch jobs. Please try again.';
+      setError(msg);
     } finally {
       setIsLoading(false);
     }
-  }, [keywordParam, locationParam, jobTypeParam, workModeParam, expLevelParam, page]);
+  }, [keywordParam, locationParam, employmentTypeParam, workModeParam, expLevelParam, skillsParam, sortParam, page]);
 
   useEffect(() => {
     fetchJobs();
@@ -71,11 +83,12 @@ export const JobsPage: React.FC = () => {
   const handleApplyFilter = (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     const newParams = new URLSearchParams();
-    if (keyword) newParams.set('keyword', keyword);
-    if (location) newParams.set('location', location);
-    if (jobType) newParams.set('jobType', jobType);
+    if (keyword) newParams.set('keyword', keyword.trim());
+    if (location) newParams.set('location', location.trim());
+    if (employmentType) newParams.set('employmentType', employmentType);
     if (workMode) newParams.set('workMode', workMode);
     if (experienceLevel) newParams.set('experienceLevel', experienceLevel);
+    if (sort) newParams.set('sort', sort);
     setPage(0);
     setSearchParams(newParams);
   };
@@ -83,11 +96,22 @@ export const JobsPage: React.FC = () => {
   const clearFilters = () => {
     setKeyword('');
     setLocation('');
-    setJobType('');
+    setEmploymentType('');
     setWorkMode('');
     setExperienceLevel('');
+    setSort('');
     setPage(0);
     setSearchParams(new URLSearchParams());
+  };
+
+  const handleApplyAction = (job: JobSummaryDto) => {
+    if (!isAuthenticated) {
+      navigate(`/login?next=${encodeURIComponent(`/jobs/${job.id}`)}`);
+    } else if (user?.role === 'CANDIDATE') {
+      navigate(`/candidate/jobs/${job.id}`);
+    } else {
+      navigate(`/jobs/${job.id}`);
+    }
   };
 
   return (
@@ -98,7 +122,7 @@ export const JobsPage: React.FC = () => {
           Explore Early-Career Opportunities
         </h1>
         <p className="text-xs sm:text-sm text-slate-muted mt-1">
-          Showing verified openings tailored for interns, freshers, and early professionals.
+          Showing verified openings tailored for interns, freshers, and early professionals (0–2 years).
         </p>
       </div>
 
@@ -148,31 +172,33 @@ export const JobsPage: React.FC = () => {
                 onClick={clearFilters}
                 className="text-xs text-primary hover:underline font-medium"
               >
-                Reset
+                Reset All
               </button>
             </div>
 
-            {/* Job Type */}
+            {/* Employment Type */}
             <div>
               <label className="text-xs font-semibold uppercase tracking-wider text-slate-text block mb-2 font-sans">
-                Job Type
+                Employment Type
               </label>
               <select
-                value={jobType}
+                value={employmentType}
                 onChange={(e) => {
-                  setJobType(e.target.value);
+                  setEmploymentType(e.target.value);
                   const p = new URLSearchParams(searchParams);
-                  if (e.target.value) p.set('jobType', e.target.value);
-                  else p.delete('jobType');
+                  if (e.target.value) p.set('employmentType', e.target.value);
+                  else p.delete('employmentType');
+                  p.delete('jobType');
                   setSearchParams(p);
                 }}
-                className="w-full text-xs p-2.5 rounded border border-outline-warm bg-white text-slate-text focus:ring-1 focus:ring-primary"
+                className="w-full text-xs p-2.5 rounded border border-outline-warm bg-white text-slate-text focus:ring-1 focus:ring-primary min-h-[44px]"
               >
                 <option value="">All Types</option>
                 <option value="INTERNSHIP">Internship</option>
                 <option value="FULL_TIME">Full Time</option>
                 <option value="PART_TIME">Part Time</option>
-                <option value="CONTRACT">Contract</option>
+                <option value="APPRENTICESHIP">Apprenticeship</option>
+                <option value="TRAINEE">Trainee</option>
               </select>
             </div>
 
@@ -190,12 +216,12 @@ export const JobsPage: React.FC = () => {
                   else p.delete('workMode');
                   setSearchParams(p);
                 }}
-                className="w-full text-xs p-2.5 rounded border border-outline-warm bg-white text-slate-text focus:ring-1 focus:ring-primary"
+                className="w-full text-xs p-2.5 rounded border border-outline-warm bg-white text-slate-text focus:ring-1 focus:ring-primary min-h-[44px]"
               >
                 <option value="">All Modes</option>
-                <option value="REMOTE">Remote</option>
+                <option value="ONSITE">On-Site</option>
                 <option value="HYBRID">Hybrid</option>
-                <option value="ON_SITE">On-Site</option>
+                <option value="REMOTE">Remote</option>
               </select>
             </div>
 
@@ -213,12 +239,37 @@ export const JobsPage: React.FC = () => {
                   else p.delete('experienceLevel');
                   setSearchParams(p);
                 }}
-                className="w-full text-xs p-2.5 rounded border border-outline-warm bg-white text-slate-text focus:ring-1 focus:ring-primary"
+                className="w-full text-xs p-2.5 rounded border border-outline-warm bg-white text-slate-text focus:ring-1 focus:ring-primary min-h-[44px]"
               >
                 <option value="">All Levels</option>
-                <option value="INTERN">Intern</option>
+                <option value="INTERNSHIP">Internship</option>
                 <option value="FRESHER">Fresher (0 years)</option>
-                <option value="JUNIOR">Junior (1–2 years)</option>
+                <option value="ZERO_TO_ONE_YEARS">0–1 Years</option>
+                <option value="ONE_TO_TWO_YEARS">1–2 Years</option>
+              </select>
+            </div>
+
+            {/* Sort Order */}
+            <div>
+              <label className="text-xs font-semibold uppercase tracking-wider text-slate-text block mb-2 font-sans">
+                Sort By
+              </label>
+              <select
+                value={sort}
+                onChange={(e) => {
+                  setSort(e.target.value);
+                  const p = new URLSearchParams(searchParams);
+                  if (e.target.value) p.set('sort', e.target.value);
+                  else p.delete('sort');
+                  setSearchParams(p);
+                }}
+                className="w-full text-xs p-2.5 rounded border border-outline-warm bg-white text-slate-text focus:ring-1 focus:ring-primary min-h-[44px]"
+              >
+                <option value="">Newest First</option>
+                <option value="latest">Latest</option>
+                <option value="oldest">Oldest</option>
+                <option value="deadline,asc">Deadline (Urgent First)</option>
+                <option value="salary,desc">Salary (High to Low)</option>
               </select>
             </div>
           </div>
@@ -261,7 +312,7 @@ export const JobsPage: React.FC = () => {
                     key={job.id}
                     job={job}
                     onView={(j) => navigate(`/jobs/${j.id}`)}
-                    onApply={(j) => navigate(`/candidate/jobs/${j.id}`)}
+                    onApply={handleApplyAction}
                   />
                 ))}
               </div>

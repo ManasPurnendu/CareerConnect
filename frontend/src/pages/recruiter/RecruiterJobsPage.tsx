@@ -23,7 +23,7 @@ export const RecruiterJobsPage: React.FC = () => {
         const response = await recruiterApi.getJobs(page, 10);
         if (response?.content) {
           setJobs(response.content);
-          setTotalPages(response.page.totalPages);
+          setTotalPages(response.page?.totalPages ?? 1);
         }
       } finally {
         setIsLoading(false);

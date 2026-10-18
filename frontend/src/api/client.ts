@@ -123,9 +123,22 @@ async function request<T>(endpoint: string, options: RequestOptions = {}): Promi
     throw new ApiClientError(response.status, errorMessage, errorCode, errorPayload?.data);
   }
 
-  // Return the unwrapped canonical payload
+  // Return the unwrapped canonical payload, preserving pagination if present
   if (jsonResult && 'success' in jsonResult && jsonResult.success === true) {
-    return jsonResult.data;
+    if ('pagination' in jsonResult && jsonResult.pagination) {
+      return {
+        data: jsonResult.data,
+        pagination: jsonResult.pagination,
+        content: jsonResult.data,
+        page: {
+          pageNumber: jsonResult.pagination.page,
+          pageSize: jsonResult.pagination.size,
+          totalElements: jsonResult.pagination.totalElements,
+          totalPages: jsonResult.pagination.totalPages,
+        },
+      } as unknown as T;
+    }
+    return jsonResult.data as T;
   }
 
   return jsonResult as unknown as T;

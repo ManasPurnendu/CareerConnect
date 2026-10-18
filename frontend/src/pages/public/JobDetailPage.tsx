@@ -1,18 +1,20 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { jobsApi } from '../../api/jobs';
-import type { Job } from '../../types/api';
+import type { JobDetailDto } from '../../types/api';
 import { Badge } from '../../components/ui/Badge';
 import { Button } from '../../components/ui/Button';
 import { Breadcrumb } from '../../components/ui/Breadcrumb';
 import { LoadingState } from '../../components/ui/LoadingState';
 import { ErrorState } from '../../components/ui/ErrorState';
+import { useAuth } from '../../auth/useAuth';
 
 export const JobDetailPage: React.FC = () => {
   const { jobId } = useParams<{ jobId: string }>();
   const navigate = useNavigate();
+  const { isAuthenticated, user } = useAuth();
 
-  const [job, setJob] = useState<Job | null>(null);
+  const [job, setJob] = useState<JobDetailDto | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -24,8 +26,9 @@ export const JobDetailPage: React.FC = () => {
       try {
         const data = await jobsApi.getJobById(jobId);
         setJob(data);
-      } catch {
-        setError('The requested job posting could not be found or has been closed.');
+      } catch (err: unknown) {
+        const msg = err instanceof Error ? err.message : 'The requested job posting could not be found or has been closed.';
+        setError(msg);
       } finally {
         setIsLoading(false);
       }
@@ -53,6 +56,55 @@ export const JobDetailPage: React.FC = () => {
     );
   }
 
+  const companyName = job.company?.name || 'Company';
+
+  const formatSalary = (min?: number, max?: number, currency = 'INR') => {
+    if (!min && !max) return null;
+    if (min && max) return `${min} - ${max} LPA ${currency}`;
+    if (min) return `From ${min} LPA ${currency}`;
+    return `Up to ${max} LPA ${currency}`;
+  };
+
+  const salaryDisplay = formatSalary(job.salaryMinLpa, job.salaryMaxLpa, job.salaryCurrency);
+
+  const formatWorkMode = (mode: string) => {
+    switch (mode) {
+      case 'ONSITE':
+        return 'On-Site';
+      case 'HYBRID':
+        return 'Hybrid';
+      case 'REMOTE':
+        return 'Remote';
+      default:
+        return mode;
+    }
+  };
+
+  const formatExpLevel = (level: string) => {
+    switch (level) {
+      case 'INTERNSHIP':
+        return 'Internship';
+      case 'FRESHER':
+        return 'Fresher (0 years)';
+      case 'ZERO_TO_ONE_YEARS':
+        return '0–1 Years';
+      case 'ONE_TO_TWO_YEARS':
+        return '1–2 Years';
+      default:
+        return level;
+    }
+  };
+
+  const handleApplyClick = () => {
+    if (!isAuthenticated) {
+      navigate(`/login?next=${encodeURIComponent(`/jobs/${job.id}`)}`);
+    } else if (user?.role === 'CANDIDATE') {
+      navigate(`/candidate/jobs/${job.id}`);
+    } else {
+      alert('Only candidate accounts can submit job applications.');
+    }
+  };
+
   return (
     <div className="layout-container py-8 sm:py-10 max-w-4xl mx-auto space-y-6">
       <Breadcrumb
@@ -68,21 +120,21 @@ export const JobDetailPage: React.FC = () => {
         <div className="flex flex-col sm:flex-row items-start justify-between gap-4">
           <div className="flex items-start gap-4">
             <div className="w-14 h-14 rounded bg-[#F2F5F3] border border-outline-warm flex items-center justify-center font-bold text-slate-text text-xl shrink-0 uppercase">
-              {job.companyLogoUrl ? (
-                <img
-                  src={job.companyLogoUrl}
-                  alt={job.companyName}
-                  className="w-full h-full object-cover rounded"
-                />
-              ) : (
-                job.companyName.substring(0, 2)
-              )}
+              {companyName.substring(0, 2)}
             </div>
             <div>
               <h1 className="font-headline font-bold text-xl sm:text-2xl text-slate-text">
                 {job.title}
               </h1>
-              <p className="text-sm font-medium text-slate-muted mt-0.5">{job.companyName}</p>
+              <p className="text-sm font-medium text-slate-muted mt-0.5">
+                <Link
+                  to={`/companies/${job.company?.id}`}
+                  className="hover:text-primary hover:underline transition-colors"
+                >
+                  {companyName}
+                </Link>
+                {job.company?.industry ? ` · ${job.company.industry}` : ''}
+              </p>
               <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-slate-muted mt-2">
                 <span className="flex items-center gap-1">
                   <span className="material-symbols-outlined !text-[16px]">location_on</span>
@@ -92,70 +144,102 @@ export const JobDetailPage: React.FC = () => {
                   <span className="material-symbols-outlined !text-[16px]">schedule</span>
                   Posted {new Date(job.createdAt).toLocaleDateString()}
                 </span>
-                {job.openPositions && (
-                  <span className="flex items-center gap-1">
-                    <span className="material-symbols-outlined !text-[16px]">group</span>
-                    {job.openPositions} opening{job.openPositions > 1 ? 's' : ''}
+                {job.applicationDeadline && (
+                  <span className="flex items-center gap-1 text-status-review font-medium">
+                    <span className="material-symbols-outlined !text-[16px]">event</span>
+                    Deadline: {new Date(job.applicationDeadline).toLocaleDateString()}
                   </span>
                 )}
               </div>
             </div>
           </div>
 
-          <Link to={`/candidate/jobs/${job.id}`}>
-            <Button variant="primary" size="lg" className="w-full sm:w-auto">
-              Apply For Role
-            </Button>
-          </Link>
+          <Button
+            variant="primary"
+            size="lg"
+            onClick={handleApplyClick}
+            className="w-full sm:w-auto shrink-0"
+          >
+            Apply For Role
+          </Button>
         </div>
 
         {/* Badges Bar */}
         <div className="flex flex-wrap gap-2 pt-2 border-t border-outline-warm/70">
           <Badge variant="neutral" size="md">
-            {job.jobType.replace(/_/g, ' ')}
+            {(job.employmentType || job.jobType || 'FULL_TIME').replace(/_/g, ' ')}
           </Badge>
           <Badge variant="neutral" size="md">
-            {job.workMode.replace(/_/g, ' ')}
+            {formatWorkMode(job.workMode)}
           </Badge>
           <Badge variant="neutral" size="md">
-            {job.experienceLevel.replace(/_/g, ' ')}
+            {formatExpLevel(job.experienceLevel)}
           </Badge>
-          {job.minSalary && (
+          {salaryDisplay && (
             <Badge variant="success" size="md">
-              Salary: {job.currency || '$'}{job.minSalary.toLocaleString()}
-              {job.maxSalary ? ` - ${job.currency || '$'}${job.maxSalary.toLocaleString()}` : '+'}
+              Salary: {salaryDisplay}
             </Badge>
           )}
         </div>
 
         {/* Required Skills */}
-        {job.requiredSkills && job.requiredSkills.length > 0 && (
+        {job.skills && job.skills.length > 0 && (
           <div className="pt-2">
             <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-text mb-2">
               Required Skills
             </h3>
             <div className="flex flex-wrap gap-1.5">
-              {job.requiredSkills.map((skill) => (
-                <span
-                  key={skill}
-                  className="text-xs font-mono bg-[#F2F5F3] text-slate-text px-2.5 py-1 rounded border border-outline-warm"
-                >
-                  {skill}
-                </span>
-              ))}
+              {job.skills.map((skill, idx) => {
+                const name = typeof skill === 'string' ? skill : skill?.name || '';
+                const key = typeof skill === 'string' ? `${skill}-${idx}` : (skill?.id ?? idx);
+                return (
+                  <span
+                    key={key}
+                    className="text-xs font-mono bg-[#F2F5F3] text-slate-text px-2.5 py-1 rounded border border-outline-warm"
+                  >
+                    {name}
+                  </span>
+                );
+              })}
             </div>
           </div>
         )}
 
         {/* Job Description */}
-        <div className="pt-4 border-t border-outline-warm/70 space-y-3">
-          <h2 className="font-headline font-semibold text-base sm:text-lg text-slate-text">
-            Job Description & Responsibilities
-          </h2>
-          <div className="text-sm text-slate-variant leading-relaxed whitespace-pre-line font-sans">
-            {job.description}
+        {job.description && (
+          <div className="pt-4 border-t border-outline-warm/70 space-y-3">
+            <h2 className="font-headline font-semibold text-base sm:text-lg text-slate-text">
+              Role Overview
+            </h2>
+            <div className="text-sm text-slate-variant leading-relaxed whitespace-pre-line font-sans">
+              {job.description}
+            </div>
           </div>
-        </div>
+        )}
+
+        {/* Responsibilities */}
+        {job.responsibilities && (
+          <div className="pt-4 border-t border-outline-warm/70 space-y-3">
+            <h2 className="font-headline font-semibold text-base sm:text-lg text-slate-text">
+              Responsibilities
+            </h2>
+            <div className="text-sm text-slate-variant leading-relaxed whitespace-pre-line font-sans">
+              {job.responsibilities}
+            </div>
+          </div>
+        )}
+
+        {/* Requirements */}
+        {job.requirements && (
+          <div className="pt-4 border-t border-outline-warm/70 space-y-3">
+            <h2 className="font-headline font-semibold text-base sm:text-lg text-slate-text">
+              Requirements
+            </h2>
+            <div className="text-sm text-slate-variant leading-relaxed whitespace-pre-line font-sans">
+              {job.requirements}
+            </div>
+          </div>
+        )}
 
         {/* Bottom Apply CTA */}
         <div className="pt-6 border-t border-outline-warm flex items-center justify-between">
@@ -163,11 +247,9 @@ export const JobDetailPage: React.FC = () => {
             <span className="material-symbols-outlined !text-base">arrow_back</span>
             Back to All Openings
           </Link>
-          <Link to={`/candidate/jobs/${job.id}`}>
-            <Button variant="primary" size="md">
-              Apply Now
-            </Button>
-          </Link>
+          <Button variant="primary" size="md" onClick={handleApplyClick}>
+            Apply Now
+          </Button>
         </div>
       </div>
     </div>
