@@ -36,6 +36,18 @@ public final class SecurityUtils {
         return getRequiredCurrentUser().getUserId();
     }
 
+    public static Long getRequiredUserId() {
+        return getRequiredCurrentUser().getUserId();
+    }
+
+    public static Long getRequiredAdminUserId() {
+        SecurityUser user = getRequiredCurrentUser();
+        if (user.getRole() != Role.ADMIN) {
+            throw new ForbiddenException("Only administrators can perform this action.");
+        }
+        return user.getUserId();
+    }
+
     public static Role getCurrentRole() {
         return getRequiredCurrentUser().getRole();
     }

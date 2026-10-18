@@ -83,6 +83,9 @@ public class SecurityConfig {
                         // Recruiter Protected Endpoints (Phase 6)
                         .requestMatchers("/api/recruiter/**").hasRole("RECRUITER")
 
+                        // Admin Protected Endpoints (Phase 8)
+                        .requestMatchers("/api/admin/**").hasRole("ADMIN")
+
                         // All other endpoints require authentication
                         .anyRequest().authenticated()
                 )
