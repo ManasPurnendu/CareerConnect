@@ -143,6 +143,50 @@ public class CandidateResumeService {
         }
     }
 
+    public record ResumeFileResource(
+            String filename,
+            String contentType,
+            long sizeBytes,
+            byte[] content
+    ) {}
+
+    public ResumeFileResource getResumeFile(String storageKey, String originalFilename, String contentType) {
+        if (!StringUtils.hasText(storageKey)) {
+            throw new ResourceNotFoundException("Resume file not found.");
+        }
+        try {
+            Path uploadPath = getUploadDirectory();
+            Path targetFile = resolveStoragePath(uploadPath, storageKey);
+            if (!Files.exists(targetFile) || !Files.isRegularFile(targetFile)) {
+                log.warn("Physical resume file not found at path: {}", targetFile);
+                throw new ResourceNotFoundException("Resume file not found on disk.");
+            }
+            byte[] bytes = Files.readAllBytes(targetFile);
+            String cleanName = getCleanFilename(originalFilename);
+            String mimeType = StringUtils.hasText(contentType) ? contentType : "application/pdf";
+            return new ResumeFileResource(cleanName, mimeType, bytes.length, bytes);
+        } catch (ResourceNotFoundException e) {
+            throw e;
+        } catch (SecurityException e) {
+            log.error("Security violation resolving resume path: {}", e.getMessage());
+            throw new ResourceNotFoundException("Resume file could not be accessed.");
+        } catch (Exception e) {
+            log.error("Failed to read resume file from storage", e);
+            throw new ResourceNotFoundException("Failed to read resume file.");
+        }
+    }
+
+    public ResumeFileResource getCurrentResumeFile(Long candidateId) {
+        if (candidateId == null) {
+            throw new UnauthorizedException("Candidate identity required.");
+        }
+
+        ResumeEntity resume = candidateResumeRepository.findCurrentByCandidateId(candidateId)
+                .orElseThrow(() -> new ResourceNotFoundException("No current resume found for candidate."));
+
+        return getResumeFile(resume.storageKey(), resume.originalFilename(), resume.contentType());
+    }
+
     private void validateFile(MultipartFile file) {
         if (file == null || file.isEmpty()) {
             throw new ValidationException("Resume file is required and cannot be empty.", ErrorCode.CANDIDATE_RESUME_REQUIRED);

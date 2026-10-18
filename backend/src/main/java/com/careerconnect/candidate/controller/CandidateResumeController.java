@@ -36,10 +36,35 @@ public class CandidateResumeController {
 
     @GetMapping
     @PreAuthorize("hasRole('CANDIDATE')")
-    public ResponseEntity<ApiResponse<ResumeResponse>> getCurrentResume() {
+    public ResponseEntity<?> getCurrentResume(
+            @RequestParam(value = "download", required = false, defaultValue = "false") boolean download,
+            @org.springframework.web.bind.annotation.RequestHeader(value = org.springframework.http.HttpHeaders.ACCEPT, required = false) String acceptHeader) {
         Long candidateId = SecurityUtils.getRequiredCandidateId();
+
+        if (download || (acceptHeader != null && acceptHeader.contains(MediaType.APPLICATION_PDF_VALUE)
+                && !acceptHeader.contains(MediaType.APPLICATION_JSON_VALUE) && !acceptHeader.contains("*/*"))) {
+            CandidateResumeService.ResumeFileResource file = candidateResumeService.getCurrentResumeFile(candidateId);
+            return ResponseEntity.ok()
+                    .contentType(MediaType.parseMediaType(file.contentType()))
+                    .header(org.springframework.http.HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + file.filename() + "\"")
+                    .contentLength(file.sizeBytes())
+                    .body(file.content());
+        }
+
         ResumeResponse response = candidateResumeService.getCurrentResume(candidateId);
         return ResponseEntity.ok(ApiResponse.success(response, "Current resume retrieved successfully"));
+    }
+
+    @GetMapping("/download")
+    @PreAuthorize("hasRole('CANDIDATE')")
+    public ResponseEntity<byte[]> downloadCurrentResume() {
+        Long candidateId = SecurityUtils.getRequiredCandidateId();
+        CandidateResumeService.ResumeFileResource file = candidateResumeService.getCurrentResumeFile(candidateId);
+        return ResponseEntity.ok()
+                .contentType(MediaType.parseMediaType(file.contentType()))
+                .header(org.springframework.http.HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + file.filename() + "\"")
+                .contentLength(file.sizeBytes())
+                .body(file.content());
     }
 
     @DeleteMapping
