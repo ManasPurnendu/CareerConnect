@@ -38,7 +38,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ role }) => {
           { label: 'Users', path: '/admin/users', icon: 'manage_accounts' },
           { label: 'Companies', path: '/admin/companies', icon: 'corporate_fare' },
           { label: 'Job Postings', path: '/admin/jobs', icon: 'work' },
-          { label: 'Audit Logs', path: '/admin/audit', icon: 'receipt_long' },
+          { label: 'Applications', path: '/admin/applications', icon: 'description' },
+          { label: 'Audit Logs', path: '/admin/audit-logs', icon: 'receipt_long' },
         ];
       default:
         return [];

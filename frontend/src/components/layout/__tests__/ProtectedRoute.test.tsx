@@ -66,4 +66,21 @@ describe('ProtectedRoute guard', () => {
     renderWithAuth(recruiterUser, ['RECRUITER'], '/protected');
     expect(screen.getByText('Protected Content')).toBeInTheDocument();
   });
+
+  it('blocks CANDIDATE and RECRUITER from ADMIN protected routes', () => {
+    const candidateUser: AuthUser = { id: 2, email: 'c@example.com', role: 'CANDIDATE', isActive: true };
+    const { unmount } = renderWithAuth(candidateUser, ['ADMIN'], '/protected');
+    expect(screen.getByText('Forbidden 403 Target')).toBeInTheDocument();
+    unmount();
+
+    const recruiterUser: AuthUser = { id: 3, email: 'r@example.com', role: 'RECRUITER', isActive: true };
+    renderWithAuth(recruiterUser, ['ADMIN'], '/protected');
+    expect(screen.getByText('Forbidden 403 Target')).toBeInTheDocument();
+  });
+
+  it('allows authenticated ADMIN users to access ADMIN protected routes', () => {
+    const adminUser: AuthUser = { id: 1, email: 'admin@careerconnect.com', role: 'ADMIN', isActive: true };
+    renderWithAuth(adminUser, ['ADMIN'], '/protected');
+    expect(screen.getByText('Protected Content')).toBeInTheDocument();
+  });
 });

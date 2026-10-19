@@ -524,3 +524,137 @@ export interface Application {
   updatedAt: string;
 }
 
+// --------------------------------------------------------------------------
+// Admin Experience Canonical DTOs (P8 Backend Contracts)
+// --------------------------------------------------------------------------
+
+export interface AdminDashboardMetrics {
+  users: {
+    total: number;
+    candidates: number;
+    recruiters: number;
+    active: number;
+    inactive: number;
+  };
+  companies: {
+    total: number;
+    active: number;
+    inactive: number;
+  };
+  jobs: {
+    total: number;
+    active: number;
+    draft: number;
+    closed: number;
+    archived: number;
+  };
+  applications: {
+    total: number;
+    applied: number;
+    underReview: number;
+    shortlisted: number;
+    rejected: number;
+    selected: number;
+    withdrawn: number;
+  };
+}
+
+export interface AdminUserDto {
+  id: number;
+  email: string;
+  role: Role;
+  fullName: string;
+  active: boolean;
+  candidateId?: number | null;
+  recruiterId?: number | null;
+  companyId?: number | null;
+  companyName?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface AdminUpdateUserStatusRequest {
+  isActive: boolean;
+}
+
+export interface AdminCompanyDto {
+  id: number;
+  name: string;
+  industry?: string | null;
+  location?: string | null;
+  website?: string | null;
+  description?: string | null;
+  companySize?: string | null;
+  active: boolean;
+  jobCount: number;
+  recruiterCount: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface AdminUpdateCompanyStatusRequest {
+  isActive: boolean;
+}
+
+export interface AdminJobDto {
+  id: number;
+  companyId: number;
+  companyName: string;
+  title: string;
+  description: string;
+  jobType: JobType;
+  experienceLevel: ExperienceLevel;
+  workMode: WorkMode;
+  location?: string | null;
+  salaryMinLpa?: number | null;
+  salaryMaxLpa?: number | null;
+  applicationDeadline: string;
+  status: JobStatus;
+  applicationCount: number;
+  requiredSkills: string[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface AdminApplicationSummaryDto {
+  id: number;
+  jobId: number;
+  jobTitle: string;
+  companyId: number;
+  companyName: string;
+  candidateId: number;
+  candidateName: string;
+  candidateEmail: string;
+  status: ApplicationStatus;
+  appliedAt: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface AdminApplicationDetailDto {
+  applicationId: number;
+  jobId: number;
+  jobTitle: string;
+  companyId: number;
+  companyName: string;
+  candidateId: number;
+  status: ApplicationStatus;
+  coverLetter?: string | null;
+  appliedAt: string;
+  candidateSnapshot?: CandidateSnapshot;
+  resumeSnapshot?: ResumeSnapshot;
+  statusHistory?: ApplicationStatusHistoryDto[];
+  match?: JobMatchDto;
+}
+
+export interface AuditLogDto {
+  id: number;
+  actorUserId: number;
+  action: string;
+  entityType: string;
+  entityId: number;
+  metadata?: string | null;
+  createdAt: string;
+}
+
+

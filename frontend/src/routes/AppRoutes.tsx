@@ -45,6 +45,8 @@ import { AdminDashboardPage } from '../pages/admin/AdminDashboardPage';
 import { AdminUsersPage } from '../pages/admin/AdminUsersPage';
 import { AdminCompaniesPage } from '../pages/admin/AdminCompaniesPage';
 import { AdminJobsPage } from '../pages/admin/AdminJobsPage';
+import { AdminApplicationsPage } from '../pages/admin/AdminApplicationsPage';
+import { AdminApplicationDetailPage } from '../pages/admin/AdminApplicationDetailPage';
 import { AdminAuditPage } from '../pages/admin/AdminAuditPage';
 
 // System Pages
@@ -110,9 +112,10 @@ export const AppRoutes: React.FC = () => {
           <Route path="/admin/users" element={<AdminUsersPage />} />
           <Route path="/admin/companies" element={<AdminCompaniesPage />} />
           <Route path="/admin/jobs" element={<AdminJobsPage />} />
-          <Route path="/admin/applications" element={<AdminDashboardPage />} />
-          <Route path="/admin/applications/:applicationId" element={<AdminDashboardPage />} />
-          <Route path="/admin/audit" element={<AdminAuditPage />} />
+          <Route path="/admin/applications" element={<AdminApplicationsPage />} />
+          <Route path="/admin/applications/:applicationId" element={<AdminApplicationDetailPage />} />
+          <Route path="/admin/audit-logs" element={<AdminAuditPage />} />
+          <Route path="/admin/audit" element={<Navigate to="/admin/audit-logs" replace />} />
         </Route>
       </Route>
 
