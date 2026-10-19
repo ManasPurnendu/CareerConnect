@@ -31,7 +31,6 @@ export const Sidebar: React.FC<SidebarProps> = ({ role }) => {
           { label: 'Applicants', path: '/recruiter/applications', icon: 'group' },
           { label: 'Company Profile', path: '/recruiter/company', icon: 'domain' },
           { label: 'Notifications', path: '/recruiter/notifications', icon: 'notifications' },
-          { label: 'Settings', path: '/recruiter/settings', icon: 'settings' },
         ];
       case 'ADMIN':
         return [

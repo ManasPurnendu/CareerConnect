@@ -92,9 +92,14 @@ async function request<T>(endpoint: string, options: RequestOptions = {}): Promi
     throw new ApiClientError(0, 'Network connection error or backend service unreachable', 'NETWORK_ERROR', networkError);
   }
 
-  // Handle binary responses (e.g., PDF resumes)
+  // Handle binary responses (e.g., PDF and DOCX resumes)
   const contentType = response.headers.get('content-type') || '';
-  if (contentType.includes('application/pdf') || contentType.includes('application/octet-stream')) {
+  if (
+    contentType.includes('application/pdf') ||
+    contentType.includes('application/octet-stream') ||
+    contentType.includes('application/vnd') ||
+    contentType.includes('application/msword')
+  ) {
     if (!response.ok) {
       throw new ApiClientError(response.status, 'Failed to download binary file', 'DOWNLOAD_ERROR');
     }
@@ -128,6 +133,7 @@ async function request<T>(endpoint: string, options: RequestOptions = {}): Promi
     if ('pagination' in jsonResult && jsonResult.pagination) {
       return {
         data: jsonResult.data,
+        items: jsonResult.data,
         pagination: jsonResult.pagination,
         content: jsonResult.data,
         page: {

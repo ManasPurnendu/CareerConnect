@@ -34,8 +34,11 @@ import { CandidateSettingsPage } from '../pages/candidate/CandidateSettingsPage'
 import { RecruiterDashboardPage } from '../pages/recruiter/RecruiterDashboardPage';
 import { RecruiterJobsPage } from '../pages/recruiter/RecruiterJobsPage';
 import { RecruiterNewJobPage } from '../pages/recruiter/RecruiterNewJobPage';
+import { RecruiterJobDetailPage } from '../pages/recruiter/RecruiterJobDetailPage';
 import { RecruiterApplicationsPage } from '../pages/recruiter/RecruiterApplicationsPage';
+import { RecruiterApplicationDetailPage } from '../pages/recruiter/RecruiterApplicationDetailPage';
 import { RecruiterCompanyPage } from '../pages/recruiter/RecruiterCompanyPage';
+import { RecruiterNotificationsPage } from '../pages/recruiter/RecruiterNotificationsPage';
 
 // Admin Pages
 import { AdminDashboardPage } from '../pages/admin/AdminDashboardPage';
@@ -89,14 +92,14 @@ export const AppRoutes: React.FC = () => {
           <Route path="/recruiter" element={<RecruiterDashboardPage />} />
           <Route path="/recruiter/jobs" element={<RecruiterJobsPage />} />
           <Route path="/recruiter/jobs/new" element={<RecruiterNewJobPage />} />
-          <Route path="/recruiter/jobs/:jobId" element={<RecruiterJobsPage />} />
+          <Route path="/recruiter/jobs/:jobId" element={<RecruiterJobDetailPage />} />
           <Route path="/recruiter/jobs/:jobId/edit" element={<RecruiterNewJobPage />} />
+          <Route path="/recruiter/jobs/:jobId/applicants" element={<RecruiterApplicationsPage />} />
           <Route path="/recruiter/applications" element={<RecruiterApplicationsPage />} />
-          <Route path="/recruiter/applications/:applicationId" element={<RecruiterApplicationsPage />} />
+          <Route path="/recruiter/applications/:applicationId" element={<RecruiterApplicationDetailPage />} />
           <Route path="/recruiter/company" element={<RecruiterCompanyPage />} />
           <Route path="/recruiter/company/edit" element={<RecruiterCompanyPage />} />
-          <Route path="/recruiter/notifications" element={<RecruiterDashboardPage />} />
-          <Route path="/recruiter/settings" element={<RecruiterDashboardPage />} />
+          <Route path="/recruiter/notifications" element={<RecruiterNotificationsPage />} />
         </Route>
       </Route>
 

@@ -30,10 +30,20 @@ const statusMap: Record<string, StatusConfig> = {
     classes: 'bg-primary-tint text-primary border-[#A7F3D0]',
     icon: 'star',
   },
+  INTERVIEW: {
+    label: 'Interview',
+    classes: 'bg-status-interview-bg text-status-interview border-status-interview-border',
+    icon: 'calendar_month',
+  },
   INTERVIEW_SCHEDULED: {
     label: 'Interview',
     classes: 'bg-status-interview-bg text-status-interview border-status-interview-border',
     icon: 'calendar_month',
+  },
+  SELECTED: {
+    label: 'Selected',
+    classes: 'bg-[#ECFDF5] text-[#065F46] border-[#6EE7B7]',
+    icon: 'check_circle',
   },
   OFFERED: {
     label: 'Offered',
@@ -51,6 +61,11 @@ const statusMap: Record<string, StatusConfig> = {
     icon: 'undo',
   },
   // Job statuses
+  ACTIVE: {
+    label: 'Active',
+    classes: 'bg-[#F0FDF4] text-[#166534] border-[#BBF7D0]',
+    icon: 'check_circle',
+  },
   PUBLISHED: {
     label: 'Active',
     classes: 'bg-[#F0FDF4] text-[#166534] border-[#BBF7D0]',

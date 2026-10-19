@@ -26,10 +26,12 @@ export type ApplicationStatus =
   | 'APPLIED'
   | 'UNDER_REVIEW'
   | 'SHORTLISTED'
-  | 'INTERVIEW_SCHEDULED'
-  | 'OFFERED'
+  | 'INTERVIEW'
+  | 'SELECTED'
   | 'REJECTED'
-  | 'WITHDRAWN';
+  | 'WITHDRAWN'
+  | 'INTERVIEW_SCHEDULED'
+  | 'OFFERED';
 
 export interface PaginationMetadata {
   page: number;
@@ -63,6 +65,7 @@ export interface PagedResponse<T> {
   data: T[];
   pagination?: PaginationMetadata;
   // Aliases for compatibility
+  items?: T[];
   content?: T[];
   page?: PageMetadataCompat;
 }
@@ -86,7 +89,7 @@ export interface AuthResponseData {
 }
 
 export interface SkillDto {
-  id?: number;
+  id: number;
   name: string;
 }
 
@@ -135,6 +138,9 @@ export interface JobSummaryDto {
   status: JobStatus;
   skills: (string | SkillDto)[];
   createdAt: string;
+  updatedAt?: string;
+  applicantCount?: number;
+  applicationCount?: number;
   matchScore?: number;
 }
 
@@ -158,6 +164,7 @@ export interface JobDetailDto {
   skills: (string | SkillDto)[];
   createdAt: string;
   updatedAt?: string;
+  applicantCount?: number;
   applicationCount?: number;
 }
 
@@ -411,6 +418,93 @@ export interface NotificationSummaryResponse {
   unreadCount: number;
 }
 
+// Canonical Recruiter DTOs
+export interface RecruiterCompanyResponseDto {
+  id: number;
+  name: string;
+  logo?: string | null;
+  description?: string | null;
+  industry?: string | null;
+  website?: string | null;
+  location?: string | null;
+  companySize?: string | null;
+  createdAt: string;
+  updatedAt?: string | null;
+}
+
+export interface RecruiterCompanyUpsertRequest {
+  name: string;
+  logo?: string;
+  description?: string;
+  industry?: string;
+  website?: string;
+  location?: string;
+  companySize?: string;
+}
+
+export interface RecruiterJobCreateRequest {
+  title: string;
+  description: string;
+  responsibilities?: string;
+  requirements?: string;
+  jobType: JobType;
+  experienceLevel: ExperienceLevel;
+  workMode: WorkMode;
+  location?: string;
+  salaryMinLpa?: number;
+  salaryMaxLpa?: number;
+  salaryCurrency?: string;
+  applicationDeadline: string; // YYYY-MM-DD
+  requiredSkillIds: number[];
+}
+
+export interface RecruiterJobUpdateRequest {
+  title: string;
+  description: string;
+  responsibilities?: string;
+  requirements?: string;
+  jobType: JobType;
+  experienceLevel: ExperienceLevel;
+  workMode: WorkMode;
+  location?: string;
+  salaryMinLpa?: number;
+  salaryMaxLpa?: number;
+  salaryCurrency?: string;
+  applicationDeadline: string; // YYYY-MM-DD
+  requiredSkillIds: number[];
+}
+
+export interface ApplicantSummaryDto {
+  applicationId: number;
+  jobId: number;
+  candidateId: number;
+  candidateName: string;
+  candidateEmail: string;
+  candidateHeadline?: string | null;
+  status: ApplicationStatus;
+  appliedAt: string;
+  matchPercentage?: number | null;
+}
+
+export interface ApplicantDetailDto {
+  applicationId: number;
+  jobId: number;
+  jobTitle: string;
+  candidateId: number;
+  status: ApplicationStatus;
+  coverLetter?: string | null;
+  appliedAt: string;
+  candidateSnapshot?: CandidateSnapshot;
+  resumeSnapshot?: ResumeSnapshot;
+  statusHistory?: ApplicationStatusHistoryDto[];
+  match?: JobMatchDto;
+}
+
+export interface UpdateApplicationStatusRequest {
+  status: ApplicationStatus;
+  note?: string;
+}
+
 // Aliases and legacy models for recruiter component compatibility
 export type CandidateProfile = CandidateProfileResponse;
 
@@ -429,3 +523,4 @@ export interface Application {
   appliedAt: string;
   updatedAt: string;
 }
+

@@ -29,6 +29,12 @@ export const jobsApi = {
     });
   },
 
+  getJobs: async (params?: JobFilterParams): Promise<PagedResponse<JobSummaryDto>> => {
+    return apiClient.get<PagedResponse<JobSummaryDto>>('/jobs', {
+      params: params as Record<string, string | number | boolean | undefined | null>,
+    });
+  },
+
   getJobById: async (jobId: number | string): Promise<JobDetailDto> => {
     return apiClient.get<JobDetailDto>(`/jobs/${jobId}`);
   },
