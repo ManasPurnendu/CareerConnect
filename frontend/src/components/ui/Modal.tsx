@@ -78,7 +78,7 @@ export const Modal: React.FC<ModalProps> = ({
           <button
             onClick={onClose}
             aria-label="Close dialog"
-            className="text-slate-muted hover:text-slate-text p-1 rounded hover:bg-[#F2F5F3] transition-colors -mr-1"
+            className="min-w-[44px] min-h-[44px] flex items-center justify-center text-slate-muted hover:text-slate-text rounded hover:bg-[#F2F5F3] transition-colors -mr-2 -mt-1"
           >
             <span className="material-symbols-outlined !text-xl">close</span>
           </button>

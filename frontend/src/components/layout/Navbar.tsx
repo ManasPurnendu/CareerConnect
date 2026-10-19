@@ -101,7 +101,7 @@ export const Navbar: React.FC = () => {
         {/* Mobile Hamburger Button */}
         <button
           onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-          className="md:hidden p-2 rounded text-slate-text hover:bg-[#F2F5F3]"
+          className="md:hidden min-w-[44px] min-h-[44px] flex items-center justify-center p-2 rounded text-slate-text hover:bg-[#F2F5F3] focus:outline-none focus:ring-2 focus:ring-primary"
           aria-label={mobileMenuOpen ? 'Close Menu' : 'Open Menu'}
           aria-expanded={mobileMenuOpen}
         >

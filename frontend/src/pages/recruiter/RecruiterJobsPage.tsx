@@ -131,12 +131,15 @@ export const RecruiterJobsPage: React.FC = () => {
       {/* Filter and Search Bar */}
       <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
         {/* Status Filter Tabs */}
-        <div className="flex items-center gap-1 bg-white p-1 rounded border border-outline-warm shadow-subtle overflow-x-auto">
+        <div role="tablist" aria-label="Job status filters" className="flex items-center gap-1 bg-white p-1 rounded border border-outline-warm shadow-subtle overflow-x-auto">
           {(['ALL', 'ACTIVE', 'DRAFT', 'CLOSED'] as const).map((tab) => (
             <button
               key={tab}
+              type="button"
+              role="tab"
+              aria-selected={statusFilter === tab}
               onClick={() => setStatusFilter(tab)}
-              className={`px-3 py-1.5 rounded text-xs font-medium transition-colors whitespace-nowrap min-h-[36px] ${
+              className={`min-h-[44px] px-3.5 py-2 rounded text-xs font-medium transition-colors whitespace-nowrap ${
                 statusFilter === tab
                   ? 'bg-primary-tint text-primary font-semibold'
                   : 'text-slate-muted hover:text-slate-text hover:bg-[#F2F5F3]'
@@ -290,6 +293,7 @@ export const RecruiterJobsPage: React.FC = () => {
                                 onClick={() => setConfirmAction({ type: 'delete', job })}
                                 className="!text-status-rejected hover:!bg-[#FEE2E2]"
                                 title="Delete Draft"
+                                aria-label="Delete Draft"
                               >
                                 <span className="material-symbols-outlined !text-[18px]">delete</span>
                               </Button>
@@ -320,6 +324,7 @@ export const RecruiterJobsPage: React.FC = () => {
                                 size="sm"
                                 onClick={() => navigate(`/recruiter/jobs/${job.id}`)}
                                 title="View Job Details"
+                                aria-label="View Job Details"
                               >
                                 <span className="material-symbols-outlined !text-[18px]">visibility</span>
                               </Button>
@@ -343,6 +348,7 @@ export const RecruiterJobsPage: React.FC = () => {
                                   onClick={() => setConfirmAction({ type: 'delete', job })}
                                   className="!text-status-rejected hover:!bg-[#FEE2E2]"
                                   title="Delete Closed Job (0 Applicants)"
+                                  aria-label="Delete Closed Job"
                                 >
                                   <span className="material-symbols-outlined !text-[18px]">delete</span>
                                 </Button>

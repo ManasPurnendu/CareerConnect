@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { Link } from 'react-router-dom';
 import { candidateApi } from '../../api/candidate';
 import type { NotificationDto, NotificationType } from '../../types/api';
 import { Button } from '../../components/ui/Button';
@@ -131,16 +132,18 @@ export const CandidateNotificationsPage: React.FC = () => {
       )}
 
       {/* Filter Tabs */}
-      <div className="flex items-center gap-2 border-b border-outline-warm pb-2">
+      <div role="tablist" aria-label="Notification filters" className="flex items-center gap-2 border-b border-outline-warm pb-2">
         <button
           type="button"
+          role="tab"
+          aria-selected={!unreadOnly}
           onClick={() => {
             setUnreadOnly(false);
             setPage(0);
           }}
-          className={`px-3 py-1.5 text-xs font-medium rounded transition-colors ${
+          className={`min-h-[44px] px-3.5 py-2 text-xs font-medium rounded transition-colors ${
             !unreadOnly
-              ? 'bg-primary text-white'
+              ? 'bg-primary text-white font-semibold shadow-subtle'
               : 'text-slate-muted hover:text-slate-text hover:bg-slate-bg'
           }`}
         >
@@ -148,19 +151,25 @@ export const CandidateNotificationsPage: React.FC = () => {
         </button>
         <button
           type="button"
+          role="tab"
+          aria-selected={unreadOnly}
           onClick={() => {
             setUnreadOnly(true);
             setPage(0);
           }}
-          className={`px-3 py-1.5 text-xs font-medium rounded transition-colors flex items-center gap-1.5 ${
+          className={`min-h-[44px] px-3.5 py-2 text-xs font-medium rounded transition-colors flex items-center gap-1.5 ${
             unreadOnly
-              ? 'bg-primary text-white'
+              ? 'bg-primary text-white font-semibold shadow-subtle'
               : 'text-slate-muted hover:text-slate-text hover:bg-slate-bg'
           }`}
         >
-          Unread Only
+          <span>Unread Only</span>
           {unreadCount > 0 && (
-            <span className={`px-1.5 py-0.2 rounded-full text-[10px] ${unreadOnly ? 'bg-white text-primary' : 'bg-primary-tint text-primary'}`}>
+            <span
+              className={`px-1.5 py-0.5 rounded-full text-[10px] font-bold ${
+                unreadOnly ? 'bg-white text-primary' : 'bg-primary-tint text-primary'
+              }`}
+            >
               {unreadCount}
             </span>
           )}
@@ -201,7 +210,7 @@ export const CandidateNotificationsPage: React.FC = () => {
                       !item.read ? 'bg-[#F4F8F5]' : 'hover:bg-[#F9FAF9]'
                     }`}
                   >
-                    <div className="flex items-start gap-3.5">
+                    <div className="flex items-start gap-3.5 flex-1 min-w-0">
                       <div
                         className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 mt-0.5 ${
                           !item.read
@@ -213,7 +222,7 @@ export const CandidateNotificationsPage: React.FC = () => {
                           {getNotificationIcon(item.type)}
                         </span>
                       </div>
-                      <div className="space-y-1">
+                      <div className="space-y-1 flex-1 min-w-0">
                         <div className="flex items-center gap-2">
                           <h4 className="font-headline font-semibold text-xs sm:text-sm text-slate-text">
                             {item.title}
@@ -223,6 +232,30 @@ export const CandidateNotificationsPage: React.FC = () => {
                           )}
                         </div>
                         <p className="text-xs text-slate-text leading-relaxed">{item.body}</p>
+
+                        {item.resourceType === 'APPLICATION' && item.resourceId && (
+                          <div className="pt-1">
+                            <Link
+                              to={`/candidate/applications/${item.resourceId}`}
+                              className="inline-flex items-center gap-1 text-xs font-semibold text-primary hover:text-primary-dark hover:underline focus:outline-none focus:ring-1 focus:ring-primary rounded py-1"
+                            >
+                              <span>View Application Details</span>
+                              <span className="material-symbols-outlined !text-sm">arrow_forward</span>
+                            </Link>
+                          </div>
+                        )}
+                        {item.resourceType === 'JOB' && item.resourceId && (
+                          <div className="pt-1">
+                            <Link
+                              to={`/candidate/jobs/${item.resourceId}`}
+                              className="inline-flex items-center gap-1 text-xs font-semibold text-primary hover:text-primary-dark hover:underline focus:outline-none focus:ring-1 focus:ring-primary rounded py-1"
+                            >
+                              <span>View Job Details</span>
+                              <span className="material-symbols-outlined !text-sm">arrow_forward</span>
+                            </Link>
+                          </div>
+                        )}
+
                         <p className="text-[11px] text-slate-muted">
                           {new Date(item.createdAt).toLocaleString()}
                         </p>
@@ -234,7 +267,7 @@ export const CandidateNotificationsPage: React.FC = () => {
                         variant="ghost"
                         size="sm"
                         onClick={() => handleMarkAsRead(item.id)}
-                        className="text-xs text-primary hover:text-primary-dark whitespace-nowrap shrink-0"
+                        className="text-xs text-primary hover:text-primary-dark whitespace-nowrap shrink-0 min-h-[44px] px-3"
                       >
                         Mark Read
                       </Button>
@@ -246,9 +279,9 @@ export const CandidateNotificationsPage: React.FC = () => {
               {totalPages > 1 && (
                 <div className="p-4 border-t border-outline-warm flex justify-center">
                   <Pagination
-                    currentPage={page + 1}
+                    currentPage={page}
                     totalPages={totalPages}
-                    onPageChange={(newPage) => setPage(newPage - 1)}
+                    onPageChange={(newPage) => setPage(newPage)}
                   />
                 </div>
               )}

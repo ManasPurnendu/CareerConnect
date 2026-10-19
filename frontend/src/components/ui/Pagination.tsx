@@ -54,7 +54,7 @@ export const Pagination: React.FC<PaginationProps> = ({
         onClick={() => onPageChange(currentPage - 1)}
         disabled={currentPage === 0}
         aria-label="Previous page"
-        className="min-h-[38px] px-3 py-1.5 rounded border border-outline-warm bg-white text-slate-text hover:bg-[#F2F5F3] disabled:opacity-40 disabled:cursor-not-allowed inline-flex items-center gap-1 transition-colors"
+        className="min-h-[44px] px-3.5 py-2 rounded border border-outline-warm bg-white text-slate-text hover:bg-[#F2F5F3] disabled:opacity-40 disabled:cursor-not-allowed inline-flex items-center gap-1 transition-colors"
       >
         <span className="material-symbols-outlined !text-base">chevron_left</span>
         <span className="hidden sm:inline">Previous</span>
@@ -77,8 +77,9 @@ export const Pagination: React.FC<PaginationProps> = ({
             <button
               key={pageNum}
               onClick={() => onPageChange(pageNum)}
+              aria-label={`Page ${pageNum + 1}`}
               aria-current={isActive ? 'page' : undefined}
-              className={`w-9 h-9 rounded flex items-center justify-center font-medium font-mono text-xs transition-colors ${
+              className={`w-10 h-10 min-w-[40px] min-h-[40px] rounded flex items-center justify-center font-medium font-mono text-xs transition-colors ${
                 isActive
                   ? 'bg-primary text-white font-semibold'
                   : 'bg-white border border-outline-warm text-slate-text hover:bg-[#F2F5F3]'
@@ -94,7 +95,7 @@ export const Pagination: React.FC<PaginationProps> = ({
         onClick={() => onPageChange(currentPage + 1)}
         disabled={currentPage >= totalPages - 1}
         aria-label="Next page"
-        className="min-h-[38px] px-3 py-1.5 rounded border border-outline-warm bg-white text-slate-text hover:bg-[#F2F5F3] disabled:opacity-40 disabled:cursor-not-allowed inline-flex items-center gap-1 transition-colors"
+        className="min-h-[44px] px-3.5 py-2 rounded border border-outline-warm bg-white text-slate-text hover:bg-[#F2F5F3] disabled:opacity-40 disabled:cursor-not-allowed inline-flex items-center gap-1 transition-colors"
       >
         <span className="hidden sm:inline">Next</span>
         <span className="material-symbols-outlined !text-base">chevron_right</span>

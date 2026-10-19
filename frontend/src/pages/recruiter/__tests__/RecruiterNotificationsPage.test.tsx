@@ -12,6 +12,8 @@ const mockNotifications: NotificationSummaryResponse = {
       type: 'APPLICATION_STATUS_CHANGED',
       title: 'New Applicant Received',
       body: 'Samantha Ray applied for Senior Systems Engineer.',
+      resourceType: 'APPLICATION',
+      resourceId: 99,
       createdAt: '2026-10-18T14:00:00Z',
       read: false,
     },
@@ -20,6 +22,8 @@ const mockNotifications: NotificationSummaryResponse = {
       type: 'JOB_CLOSED',
       title: 'Job Closed Automatically',
       body: 'Application deadline has passed for Junior Cloud Developer.',
+      resourceType: 'JOB',
+      resourceId: 30,
       createdAt: '2026-10-18T12:00:00Z',
       read: true,
     },
@@ -90,6 +94,38 @@ describe('RecruiterNotificationsPage', () => {
 
     await waitFor(() => {
       expect(markAllSpy).toHaveBeenCalled();
+    });
+  });
+
+  it('renders direct links to application and job resources', async () => {
+    vi.spyOn(recruiterApi, 'getNotifications').mockResolvedValue(mockNotifications);
+    renderNotificationsPage();
+
+    await waitFor(() => {
+      expect(screen.getByText('View Application Details')).toBeInTheDocument();
+      expect(screen.getByText('View Job Details')).toBeInTheDocument();
+    });
+
+    const appLink = screen.getByText('View Application Details').closest('a');
+    expect(appLink).toHaveAttribute('href', '/recruiter/applications/99');
+
+    const jobLink = screen.getByText('View Job Details').closest('a');
+    expect(jobLink).toHaveAttribute('href', '/recruiter/jobs/30');
+  });
+
+  it('filters notifications by unread tab', async () => {
+    const fetchSpy = vi.spyOn(recruiterApi, 'getNotifications').mockResolvedValue(mockNotifications);
+    renderNotificationsPage();
+
+    await waitFor(() => {
+      expect(screen.getByText('New Applicant Received')).toBeInTheDocument();
+    });
+
+    const unreadTab = screen.getByRole('tab', { name: /unread/i });
+    fireEvent.click(unreadTab);
+
+    await waitFor(() => {
+      expect(fetchSpy).toHaveBeenCalledWith(0, 20, true);
     });
   });
 });

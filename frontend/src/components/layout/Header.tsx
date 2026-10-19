@@ -24,6 +24,7 @@ export const Header: React.FC<HeaderProps> = ({ title, subtitle, children }) => 
           { label: 'Applications', path: '/candidate/applications', icon: 'description' },
           { label: 'My Profile', path: '/candidate/profile', icon: 'person' },
           { label: 'Notifications', path: '/candidate/notifications', icon: 'notifications' },
+          { label: 'Settings', path: '/candidate/settings', icon: 'settings' },
         ];
       case 'RECRUITER':
         return [
@@ -58,7 +59,7 @@ export const Header: React.FC<HeaderProps> = ({ title, subtitle, children }) => 
             <button
               type="button"
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="md:hidden p-2 rounded text-slate-text hover:bg-[#F2F5F3] focus:outline-none focus:ring-2 focus:ring-primary"
+              className="md:hidden min-w-[44px] min-h-[44px] flex items-center justify-center p-2 rounded text-slate-text hover:bg-[#F2F5F3] focus:outline-none focus:ring-2 focus:ring-primary"
               aria-label={mobileMenuOpen ? 'Close Menu' : 'Open Menu'}
               aria-expanded={mobileMenuOpen}
             >
@@ -155,7 +156,7 @@ export const Header: React.FC<HeaderProps> = ({ title, subtitle, children }) => 
                 setMobileMenuOpen(false);
                 logout();
               }}
-              className="text-status-rejected hover:underline py-2"
+              className="text-status-rejected hover:underline py-2 min-h-[44px] flex items-center font-medium"
             >
               Sign Out
             </button>

@@ -62,9 +62,9 @@ export const LoginPage: React.FC = () => {
           </div>
           <span className="font-headline font-bold text-2xl text-slate-text">CareerConnect</span>
         </Link>
-        <h2 className="text-center font-headline font-bold text-2xl text-slate-text tracking-tight">
+        <h1 className="text-center font-headline font-bold text-2xl text-slate-text tracking-tight">
           Sign in to your account
-        </h2>
+        </h1>
         <p className="mt-2 text-center text-xs text-slate-muted">
           Or{' '}
           <Link to="/register" className="font-medium text-primary hover:underline">

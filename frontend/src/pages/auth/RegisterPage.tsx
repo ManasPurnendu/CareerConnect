@@ -67,9 +67,9 @@ export const RegisterPage: React.FC = () => {
           </div>
           <span className="font-headline font-bold text-2xl text-slate-text">CareerConnect</span>
         </Link>
-        <h2 className="text-center font-headline font-bold text-2xl text-slate-text tracking-tight">
+        <h1 className="text-center font-headline font-bold text-2xl text-slate-text tracking-tight">
           Create your account
-        </h2>
+        </h1>
         <p className="mt-2 text-center text-xs text-slate-muted">
           Already registered?{' '}
           <Link to="/login" className="font-medium text-primary hover:underline">

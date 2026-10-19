@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { recruiterApi } from '../../api/recruiter';
 import type { NotificationDto } from '../../types/api';
 import { Card, CardHeader, CardBody } from '../../components/ui/Card';
@@ -107,13 +108,16 @@ export const RecruiterNotificationsPage: React.FC = () => {
       )}
 
       {/* Filter Tabs */}
-      <div className="flex items-center gap-1 bg-white p-1 rounded border border-outline-warm shadow-subtle w-fit">
+      <div role="tablist" aria-label="Notification filters" className="flex items-center gap-1 bg-white p-1 rounded border border-outline-warm shadow-subtle w-fit">
         <button
+          type="button"
+          role="tab"
+          aria-selected={!filterUnread}
           onClick={() => {
             setFilterUnread(false);
             setPage(0);
           }}
-          className={`px-3.5 py-1.5 rounded text-xs font-medium transition-colors ${
+          className={`min-h-[44px] px-3.5 py-2 rounded text-xs font-medium transition-colors ${
             !filterUnread
               ? 'bg-primary-tint text-primary font-semibold'
               : 'text-slate-muted hover:text-slate-text hover:bg-[#F2F5F3]'
@@ -122,11 +126,14 @@ export const RecruiterNotificationsPage: React.FC = () => {
           All Alerts
         </button>
         <button
+          type="button"
+          role="tab"
+          aria-selected={filterUnread}
           onClick={() => {
             setFilterUnread(true);
             setPage(0);
           }}
-          className={`px-3.5 py-1.5 rounded text-xs font-medium transition-colors flex items-center gap-1.5 ${
+          className={`min-h-[44px] px-3.5 py-2 rounded text-xs font-medium transition-colors flex items-center gap-1.5 ${
             filterUnread
               ? 'bg-primary-tint text-primary font-semibold'
               : 'text-slate-muted hover:text-slate-text hover:bg-[#F2F5F3]'
@@ -204,6 +211,30 @@ export const RecruiterNotificationsPage: React.FC = () => {
                       <p className="text-xs text-slate-text mt-1 leading-relaxed whitespace-pre-wrap">
                         {n.body}
                       </p>
+
+                      {n.resourceType === 'APPLICATION' && n.resourceId && (
+                        <div className="pt-1">
+                          <Link
+                            to={`/recruiter/applications/${n.resourceId}`}
+                            className="inline-flex items-center gap-1 text-xs font-semibold text-primary hover:text-primary-dark hover:underline focus:outline-none focus:ring-1 focus:ring-primary rounded py-1"
+                          >
+                            <span>View Application Details</span>
+                            <span className="material-symbols-outlined !text-sm">arrow_forward</span>
+                          </Link>
+                        </div>
+                      )}
+                      {n.resourceType === 'JOB' && n.resourceId && (
+                        <div className="pt-1">
+                          <Link
+                            to={`/recruiter/jobs/${n.resourceId}`}
+                            className="inline-flex items-center gap-1 text-xs font-semibold text-primary hover:text-primary-dark hover:underline focus:outline-none focus:ring-1 focus:ring-primary rounded py-1"
+                          >
+                            <span>View Job Details</span>
+                            <span className="material-symbols-outlined !text-sm">arrow_forward</span>
+                          </Link>
+                        </div>
+                      )}
+
                       <span className="text-[10px] font-mono text-slate-muted block mt-1.5">
                         {new Date(n.createdAt).toLocaleString()}
                       </span>
@@ -217,7 +248,7 @@ export const RecruiterNotificationsPage: React.FC = () => {
                       onClick={() => handleMarkOneRead(n.id)}
                       title="Mark as read"
                       aria-label="Mark as read"
-                      className="shrink-0 text-slate-muted hover:text-primary"
+                      className="shrink-0 text-slate-muted hover:text-primary min-w-[44px] min-h-[44px] flex items-center justify-center p-2"
                     >
                       <span className="material-symbols-outlined !text-base">check</span>
                     </Button>

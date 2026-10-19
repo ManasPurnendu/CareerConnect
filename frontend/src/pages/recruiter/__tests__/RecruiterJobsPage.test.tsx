@@ -85,7 +85,7 @@ describe('RecruiterJobsPage', () => {
     });
 
     // Click Draft tab
-    fireEvent.click(screen.getByRole('button', { name: /Draft/i }));
+    fireEvent.click(screen.getByRole('tab', { name: /Draft/i }));
 
     expect(screen.queryByText('Senior Systems Engineer')).not.toBeInTheDocument();
     expect(screen.getByText('Junior Cloud Developer')).toBeInTheDocument();

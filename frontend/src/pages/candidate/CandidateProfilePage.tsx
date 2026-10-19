@@ -685,7 +685,7 @@ export const CandidateProfilePage: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => handleRemoveSkill(skill.id)}
-                    className="text-slate-muted hover:text-rose-600 transition-colors"
+                    className="text-slate-muted hover:text-rose-600 transition-colors p-1 -mr-1 rounded hover:bg-black/5 flex items-center justify-center"
                     aria-label={`Remove ${skill.name}`}
                   >
                     <span className="material-symbols-outlined !text-sm">close</span>

@@ -107,4 +107,46 @@ describe('CandidateNotificationsPage', () => {
       expect(markAllSpy).toHaveBeenCalled();
     });
   });
+
+  it('renders direct links to application and job resources', async () => {
+    vi.spyOn(candidateApi, 'getNotifications').mockResolvedValue(mockNotificationsResponse);
+
+    render(
+      <MemoryRouter>
+        <CandidateNotificationsPage />
+      </MemoryRouter>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText('View Application Details')).toBeInTheDocument();
+      expect(screen.getByText('View Job Details')).toBeInTheDocument();
+    });
+
+    const appLink = screen.getByText('View Application Details').closest('a');
+    expect(appLink).toHaveAttribute('href', '/candidate/applications/42');
+
+    const jobLink = screen.getByText('View Job Details').closest('a');
+    expect(jobLink).toHaveAttribute('href', '/candidate/jobs/5');
+  });
+
+  it('filters notifications when switching to unread only tab', async () => {
+    const fetchSpy = vi.spyOn(candidateApi, 'getNotifications').mockResolvedValue(mockNotificationsResponse);
+
+    render(
+      <MemoryRouter>
+        <CandidateNotificationsPage />
+      </MemoryRouter>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText('Status Updated to Shortlisted')).toBeInTheDocument();
+    });
+
+    const unreadTab = screen.getByRole('tab', { name: /unread only/i });
+    fireEvent.click(unreadTab);
+
+    await waitFor(() => {
+      expect(fetchSpy).toHaveBeenCalledWith(0, 15, true);
+    });
+  });
 });
