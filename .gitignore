@@ -9,6 +9,12 @@ Thumbs.db
 **/target/
 target/
 *.class
+node_modules/
+**/node_modules/
+dist/
+**/dist/
+dist-ssr/
+**/dist-ssr/
 
 # Logs
 *.log
