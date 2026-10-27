@@ -2,7 +2,6 @@ package com.careerconnect.application.controller;
 
 import com.careerconnect.application.dto.CandidateSnapshot;
 import com.careerconnect.application.dto.ResumeSnapshot;
-import com.careerconnect.application.repository.ApplicationRepository;
 import com.careerconnect.application.service.ApplicationService;
 import com.careerconnect.auth.dto.RegisterRequest;
 import com.careerconnect.candidate.dto.AssignSkillRequest;
@@ -52,9 +51,6 @@ class ApplicationSnapshotImmutabilityTest {
 
     @Autowired
     private JdbcTemplate jdbcTemplate;
-
-    @Autowired
-    private ApplicationRepository applicationRepository;
 
     @Autowired
     private ApplicationService applicationService;

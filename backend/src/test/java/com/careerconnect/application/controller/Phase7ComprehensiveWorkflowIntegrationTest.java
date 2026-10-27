@@ -9,7 +9,6 @@ import com.careerconnect.jobs.dto.RecruiterJobUpdateRequest;
 import com.careerconnect.jobs.model.ExperienceLevel;
 import com.careerconnect.jobs.model.JobType;
 import com.careerconnect.jobs.model.WorkMode;
-import com.careerconnect.security.JwtService;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.AfterEach;
@@ -68,9 +67,6 @@ public class Phase7ComprehensiveWorkflowIntegrationTest {
 
     @Autowired
     private JdbcTemplate jdbcTemplate;
-
-    @Autowired
-    private JwtService jwtService;
 
     @Value("${app.resume.upload-dir:./target/test-uploads/resumes}")
     private String uploadDir;

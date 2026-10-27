@@ -109,9 +109,6 @@ public class ApplicationTransactionTest {
     private ApplicationService applicationService;
 
     @Autowired
-    private ApplicationRepository applicationRepository;
-
-    @Autowired
     private com.careerconnect.application.service.RecruiterApplicantService recruiterApplicantService;
 
     private record UserAuth(String token, Long candidateId, Long userId) {}

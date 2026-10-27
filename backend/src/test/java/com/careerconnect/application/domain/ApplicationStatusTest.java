@@ -1,6 +1,5 @@
 package com.careerconnect.application.domain;
 
-import com.careerconnect.application.repository.ApplicationRepository;
 import com.careerconnect.application.service.ApplicationService;
 import com.careerconnect.common.exception.BusinessRuleException;
 import com.careerconnect.common.exception.ErrorCode;

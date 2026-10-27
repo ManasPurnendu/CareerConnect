@@ -5,7 +5,6 @@ import com.careerconnect.application.dto.UpdateApplicationStatusRequest;
 import com.careerconnect.auth.dto.RegisterRequest;
 import com.careerconnect.candidate.dto.UpdateProfileRequest;
 import com.careerconnect.common.model.Role;
-import com.careerconnect.jobs.model.JobStatus;
 import com.careerconnect.security.JwtService;
 import com.careerconnect.security.SecurityUser;
 import com.fasterxml.jackson.databind.JsonNode;

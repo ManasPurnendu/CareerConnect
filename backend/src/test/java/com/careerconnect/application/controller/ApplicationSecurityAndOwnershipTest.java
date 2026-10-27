@@ -1,9 +1,7 @@
 package com.careerconnect.application.controller;
 
 import com.careerconnect.application.domain.ApplicationStatus;
-import com.careerconnect.application.dto.CandidateSnapshot;
 import com.careerconnect.application.repository.ApplicationRepository;
-import com.careerconnect.application.service.ApplicationService;
 import com.careerconnect.auth.dto.RegisterRequest;
 import com.careerconnect.candidate.dto.AssignSkillRequest;
 import com.careerconnect.candidate.dto.CreateEducationRequest;
@@ -61,9 +59,6 @@ class ApplicationSecurityAndOwnershipTest {
 
     @Autowired
     private ApplicationRepository applicationRepository;
-
-    @Autowired
-    private ApplicationService applicationService;
 
     @Value("${app.resume.upload-dir:./target/test-uploads/resumes}")
     private String uploadDir;

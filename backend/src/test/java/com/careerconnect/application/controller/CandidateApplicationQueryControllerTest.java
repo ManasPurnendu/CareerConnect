@@ -1,6 +1,5 @@
 package com.careerconnect.application.controller;
 
-import com.careerconnect.application.domain.ApplicationStatus;
 import com.careerconnect.application.dto.ApplicationSubmissionRequest;
 import com.careerconnect.auth.dto.RegisterRequest;
 import com.careerconnect.candidate.dto.AssignSkillRequest;
@@ -356,14 +355,13 @@ class CandidateApplicationQueryControllerTest {
         jdbcTemplate.update("UPDATE applications SET applied_at = TIMESTAMP '2026-10-15 11:00:00' WHERE id = ?", app2);
         jdbcTemplate.update("UPDATE applications SET applied_at = TIMESTAMP '2026-10-15 12:00:00' WHERE id = ?", app3);
 
-        MvcResult res = mockMvc.perform(get("/api/candidate/applications")
+        mockMvc.perform(get("/api/candidate/applications")
                         .header("Authorization", "Bearer " + candidate.token()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data", hasSize(3)))
                 .andExpect(jsonPath("$.data[0].applicationId").value(app3))
                 .andExpect(jsonPath("$.data[1].applicationId").value(app2))
-                .andExpect(jsonPath("$.data[2].applicationId").value(app1))
-                .andReturn();
+                .andExpect(jsonPath("$.data[2].applicationId").value(app1));
 
         // Also test tie breaker: when applied_at identical, id DESC dictates order
         jdbcTemplate.update("UPDATE applications SET applied_at = TIMESTAMP '2026-10-15 10:00:00' WHERE id IN (?, ?, ?)", app1, app2, app3);
