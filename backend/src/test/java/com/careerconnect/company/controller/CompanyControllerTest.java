@@ -29,7 +29,6 @@ class CompanyControllerTest {
     private JdbcTemplate jdbcTemplate;
 
     private Long activeCompanyId1;
-    private Long activeCompanyId2;
     private Long inactiveCompanyId;
 
     @BeforeEach
@@ -50,7 +49,6 @@ class CompanyControllerTest {
                 INSERT INTO companies (name, industry, location, website, description, company_size, is_active)
                 VALUES (?, ?, ?, ?, ?, ?, ?)
                 """, "InnoFin Analytics", "Finance", "Mumbai", "https://innofin.example.com", "Fintech data platform", "51-200", true);
-        activeCompanyId2 = jdbcTemplate.queryForObject("SELECT id FROM companies WHERE name = 'InnoFin Analytics'", Long.class);
 
         // Seed Inactive Company
         jdbcTemplate.update("""

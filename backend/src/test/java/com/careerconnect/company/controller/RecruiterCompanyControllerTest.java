@@ -3,7 +3,6 @@ package com.careerconnect.company.controller;
 import com.careerconnect.auth.dto.RegisterRequest;
 import com.careerconnect.common.model.Role;
 import com.careerconnect.company.dto.RecruiterCompanyUpsertRequest;
-import com.careerconnect.company.repository.CompanyRepository;
 import com.careerconnect.company.service.RecruiterCompanyService;
 import com.careerconnect.security.JwtService;
 import com.careerconnect.security.SecurityUser;
@@ -26,7 +25,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
-import static org.hamcrest.Matchers.nullValue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
@@ -52,9 +50,6 @@ class RecruiterCompanyControllerTest {
 
     @Autowired
     private RecruiterCompanyService recruiterCompanyService;
-
-    @Autowired
-    private CompanyRepository companyRepository;
 
     private record RecruiterAuth(String token, Long recruiterId, Long userId) {}
 
