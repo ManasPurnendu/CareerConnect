@@ -20,13 +20,11 @@ import org.springframework.jdbc.support.KeyHolder;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 
-import java.math.BigDecimal;
 import java.sql.Date;
 import java.sql.PreparedStatement;
 import java.sql.Statement;
 import java.time.LocalDate;
 
-import static org.hamcrest.Matchers.is;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -146,17 +144,17 @@ class AdminDashboardControllerTest {
         // Seed 1 recruiter user + company + profile
         long recUserId = insertUser("r1@test.com", Role.RECRUITER, true);
         long companyId = insertCompany("Acme Corp", true);
-        long recruiterId = insertRecruiter(recUserId, companyId, "Recruiter One");
+        insertRecruiter(recUserId, companyId, "Recruiter One");
 
         // Seed 1 inactive company
         insertCompany("Inactive Co", false);
 
         // Seed jobs
         long activeJobId = insertJob(companyId, "Java Dev", JobStatus.ACTIVE, null);
-        long draftJobId = insertJob(companyId, "Draft Job", JobStatus.DRAFT, null);
+        insertJob(companyId, "Draft Job", JobStatus.DRAFT, null);
         long closedJobId = insertJob(companyId, "Closed Job", JobStatus.CLOSED, null);
-        long archivedJobId = insertJob(companyId, "Archived Job", JobStatus.ARCHIVED, null);
-        long deletedJobId = insertJob(companyId, "Deleted Job", JobStatus.ACTIVE, LocalDate.now()); // Soft-deleted
+        insertJob(companyId, "Archived Job", JobStatus.ARCHIVED, null);
+        insertJob(companyId, "Deleted Job", JobStatus.ACTIVE, LocalDate.now()); // Soft-deleted
 
         // Seed applications
         insertApplication(activeJobId, candidateId, ApplicationStatus.APPLIED);

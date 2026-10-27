@@ -1,10 +1,8 @@
 package com.careerconnect.admin;
 
-import com.careerconnect.application.domain.ApplicationStatus;
 import com.careerconnect.auth.dto.RegisterRequest;
 import com.careerconnect.common.model.Role;
 import com.careerconnect.common.util.JdbcUtils;
-import com.careerconnect.jobs.model.JobStatus;
 import com.careerconnect.security.JwtService;
 import com.careerconnect.security.SecurityUser;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -41,7 +39,6 @@ import java.util.UUID;
 import java.util.stream.Stream;
 
 import static org.hamcrest.Matchers.hasSize;
-import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
@@ -247,11 +244,11 @@ class AdminApplicationControllerTest {
 
         CandidateAuth cand1 = registerCandidate("cand1", "Alice Smith");
         prepareCandidateProfile(cand1, "Alice Resume Body");
-        Long app1 = applyToJob(cand1, jobA);
+        applyToJob(cand1, jobA);
 
         CandidateAuth cand2 = registerCandidate("cand2", "Bob Jones");
         prepareCandidateProfile(cand2, "Bob Resume Body");
-        Long app2 = applyToJob(cand2, jobB);
+        applyToJob(cand2, jobB);
 
         mockMvc.perform(get("/api/admin/applications")
                         .header(HttpHeaders.AUTHORIZATION, "Bearer " + adminToken)

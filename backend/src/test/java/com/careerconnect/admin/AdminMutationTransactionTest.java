@@ -4,7 +4,6 @@ import com.careerconnect.admin.audit.repository.AuditLogRepository;
 import com.careerconnect.admin.service.AdminMutationService;
 import com.careerconnect.common.model.Role;
 import com.careerconnect.common.util.JdbcUtils;
-import com.careerconnect.jobs.model.JobStatus;
 import com.careerconnect.security.SecurityUser;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.AfterEach;

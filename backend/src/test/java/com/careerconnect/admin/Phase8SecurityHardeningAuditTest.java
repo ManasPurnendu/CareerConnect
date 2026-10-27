@@ -2,14 +2,10 @@ package com.careerconnect.admin;
 
 import com.careerconnect.admin.audit.repository.AuditLogRepository;
 import com.careerconnect.admin.audit.service.AuditLogService;
-import com.careerconnect.admin.dto.AdminUpdateCompanyStatusRequest;
-import com.careerconnect.admin.dto.AdminUpdateUserStatusRequest;
 import com.careerconnect.admin.repository.AdminMutationRepository;
 import com.careerconnect.admin.repository.AdminQueryRepository;
 import com.careerconnect.admin.service.AdminMutationService;
 import com.careerconnect.auth.dto.LoginRequest;
-import com.careerconnect.candidate.repository.CandidateResumeRepository;
-import com.careerconnect.common.exception.BusinessRuleException;
 import com.careerconnect.common.model.Role;
 import com.careerconnect.common.util.JdbcUtils;
 import com.careerconnect.jobs.model.JobStatus;
@@ -52,15 +48,12 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.not;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -96,9 +89,6 @@ class Phase8SecurityHardeningAuditTest {
 
     @Autowired
     private AdminQueryRepository adminQueryRepository;
-
-    @Autowired
-    private CandidateResumeRepository candidateResumeRepository;
 
     @Autowired
     private PlatformTransactionManager transactionManager;

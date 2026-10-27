@@ -1,20 +1,14 @@
 package com.careerconnect.admin;
 
-import com.careerconnect.admin.audit.repository.AuditLogRepository;
-import com.careerconnect.admin.audit.service.AuditLogService;
-import com.careerconnect.admin.service.AdminMutationService;
 import com.careerconnect.application.domain.ApplicationStatus;
 import com.careerconnect.application.dto.UpdateApplicationStatusRequest;
 import com.careerconnect.auth.dto.RegisterRequest;
-import com.careerconnect.auth.model.User;
-import com.careerconnect.auth.repository.UserRepository;
 import com.careerconnect.candidate.dto.UpdateProfileRequest;
 import com.careerconnect.common.model.Role;
 import com.careerconnect.common.util.JdbcUtils;
 import com.careerconnect.company.dto.RecruiterCompanyUpsertRequest;
 import com.careerconnect.jobs.dto.RecruiterJobCreateRequest;
 import com.careerconnect.jobs.model.ExperienceLevel;
-import com.careerconnect.jobs.model.JobStatus;
 import com.careerconnect.jobs.model.JobType;
 import com.careerconnect.jobs.model.WorkMode;
 import com.careerconnect.security.JwtService;
@@ -49,7 +43,6 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.sql.Date;
 import java.sql.PreparedStatement;
 import java.sql.Statement;
 import java.time.LocalDate;
@@ -363,7 +356,7 @@ public class Phase8ComprehensiveWorkflowIntegrationTest {
         RecruiterAuth rec = registerRecruiter("rec.p85.e2e_" + UUID.randomUUID() + "@example.com");
 
         // 8. Create recruiter company
-        Long companyId = createCompany(rec, "Nexus Innovations");
+        createCompany(rec, "Nexus Innovations");
 
         // 9. Authenticate recruiter
         assertThat(rec.token()).isNotBlank();
@@ -624,7 +617,7 @@ public class Phase8ComprehensiveWorkflowIntegrationTest {
     @DisplayName("P8.5 Section 5: Application State Machine, Terminal States, Re-application Prohibition, and Withdrawal Rules")
     void test02_applicationLifecycleAndTerminalStates() throws Exception {
         RecruiterAuth rec = registerRecruiter("rec.p85.app_" + UUID.randomUUID() + "@example.com");
-        Long companyId = createCompany(rec, "Terminal Verification Corp");
+        createCompany(rec, "Terminal Verification Corp");
         Long skillId = getOrCreateSkill("Python", "python");
         Long jobId = createAndPublishJob(rec, "Python Backend Specialist", List.of(skillId));
 
@@ -726,7 +719,7 @@ public class Phase8ComprehensiveWorkflowIntegrationTest {
     @DisplayName("P8.5 Section 6: Job Lifecycle (Recruiter DRAFT->ACTIVE->CLOSED & Admin DRAFT/ACTIVE/CLOSED->ARCHIVED->CLOSED)")
     void test03_jobLifecycleRecruiterAndAdmin() throws Exception {
         RecruiterAuth rec = registerRecruiter("rec.p85.jl_" + UUID.randomUUID() + "@example.com");
-        Long companyId = createCompany(rec, "Lifecycle Dynamics");
+        createCompany(rec, "Lifecycle Dynamics");
         Long skillId = getOrCreateSkill("Go", "go");
 
         // Create DRAFT job
@@ -923,7 +916,7 @@ public class Phase8ComprehensiveWorkflowIntegrationTest {
     @DisplayName("P8.5 Section 9: Admin Dashboard Metrics Consistency against Real Database Counts")
     void test06_adminDashboardConsistency() throws Exception {
         RecruiterAuth rec = registerRecruiter("rec.p85.dash_" + UUID.randomUUID() + "@example.com");
-        Long companyId = createCompany(rec, "Dashboard Metrics Corp");
+        createCompany(rec, "Dashboard Metrics Corp");
         Long skillId = getOrCreateSkill("C++", "cpp");
         Long jobId = createAndPublishJob(rec, "C++ Systems Engineer", List.of(skillId));
 
@@ -932,12 +925,18 @@ public class Phase8ComprehensiveWorkflowIntegrationTest {
         applyCandidate(cand, jobId, "Cover letter for dashboard test");
 
         // Query database counts directly
-        int expectedUsers = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM users", Integer.class);
-        int expectedCandidates = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM candidates", Integer.class);
-        int expectedRecruiters = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM recruiters", Integer.class);
-        int expectedCompanies = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM companies", Integer.class);
-        int expectedJobs = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM jobs WHERE deleted_at IS NULL", Integer.class);
-        int expectedApplications = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM applications", Integer.class);
+        Integer usersCount = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM users", Integer.class);
+        int expectedUsers = usersCount != null ? usersCount : 0;
+        Integer candidatesCount = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM candidates", Integer.class);
+        int expectedCandidates = candidatesCount != null ? candidatesCount : 0;
+        Integer recruitersCount = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM recruiters", Integer.class);
+        int expectedRecruiters = recruitersCount != null ? recruitersCount : 0;
+        Integer companiesCount = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM companies", Integer.class);
+        int expectedCompanies = companiesCount != null ? companiesCount : 0;
+        Integer jobsCount = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM jobs WHERE deleted_at IS NULL", Integer.class);
+        int expectedJobs = jobsCount != null ? jobsCount : 0;
+        Integer applicationsCount = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM applications", Integer.class);
+        int expectedApplications = applicationsCount != null ? applicationsCount : 0;
 
         mockMvc.perform(get("/api/admin/dashboard")
                         .header(HttpHeaders.AUTHORIZATION, "Bearer " + adminToken))
@@ -958,7 +957,7 @@ public class Phase8ComprehensiveWorkflowIntegrationTest {
     void test07_adminApplicationVisibilityPlatformWide() throws Exception {
         // Company A + Recruiter A + Job A + Cand A
         RecruiterAuth recA = registerRecruiter("rec.p85.vis.a_" + UUID.randomUUID() + "@example.com");
-        Long compA = createCompany(recA, "Visibility Corp A");
+        createCompany(recA, "Visibility Corp A");
         Long skillA = getOrCreateSkill("Kotlin", "kotlin");
         Long jobA = createAndPublishJob(recA, "Kotlin Developer", List.of(skillA));
 
@@ -968,7 +967,7 @@ public class Phase8ComprehensiveWorkflowIntegrationTest {
 
         // Company B + Recruiter B + Job B + Cand B
         RecruiterAuth recB = registerRecruiter("rec.p85.vis.b_" + UUID.randomUUID() + "@example.com");
-        Long compB = createCompany(recB, "Visibility Corp B");
+        createCompany(recB, "Visibility Corp B");
         Long jobB = createAndPublishJob(recB, "Kotlin Backend", List.of(skillA));
 
         CandidateAuth candB = registerCandidate("cand.p85.vis.b_" + UUID.randomUUID() + "@example.com", "Candidate B");
@@ -1001,7 +1000,7 @@ public class Phase8ComprehensiveWorkflowIntegrationTest {
     @DisplayName("P8.5 Section 11: Admin Resume Streaming and Path Traversal Safety")
     void test08_adminResumeWorkflowAndPathTraversal() throws Exception {
         RecruiterAuth rec = registerRecruiter("rec.p85.res_" + UUID.randomUUID() + "@example.com");
-        Long compId = createCompany(rec, "Resume Safety Corp");
+        createCompany(rec, "Resume Safety Corp");
         Long skillId = getOrCreateSkill("TypeScript", "typescript");
         Long jobId = createAndPublishJob(rec, "TS Architect", List.of(skillId));
 
@@ -1078,7 +1077,7 @@ public class Phase8ComprehensiveWorkflowIntegrationTest {
     @DisplayName("P8.5 Section 13: Notification Delivery, Unread Counts, and Mark Read Flow")
     void test10_notificationWorkflowAcrossOperations() throws Exception {
         RecruiterAuth rec = registerRecruiter("rec.p85.notif_" + UUID.randomUUID() + "@example.com");
-        Long compId = createCompany(rec, "Notification Flow Corp");
+        createCompany(rec, "Notification Flow Corp");
         Long skillId = getOrCreateSkill("Rust", "rust");
         Long jobId = createAndPublishJob(rec, "Rust Systems Engineer", List.of(skillId));
 
@@ -1187,7 +1186,7 @@ public class Phase8ComprehensiveWorkflowIntegrationTest {
     @DisplayName("P8.5 Section 15: Matching Integration Determinism (100%, Partial, and Zero Match)")
     void test12_matchingDeterministicIntegration() throws Exception {
         RecruiterAuth rec = registerRecruiter("rec.p85.match_" + UUID.randomUUID() + "@example.com");
-        Long compId = createCompany(rec, "Matching Logic Corp");
+        createCompany(rec, "Matching Logic Corp");
 
         Long javaId = getOrCreateSkill("Java", "java");
         Long springId = getOrCreateSkill("Spring Boot", "spring boot");
@@ -1224,12 +1223,12 @@ public class Phase8ComprehensiveWorkflowIntegrationTest {
     @DisplayName("P8.5 Section 16: Cross-Company Isolation for Recruiters & Platform-Wide Admin Visibility")
     void test13_crossCompanyIsolation() throws Exception {
         RecruiterAuth recA = registerRecruiter("rec.iso.a_" + UUID.randomUUID() + "@example.com");
-        Long compA = createCompany(recA, "Iso Corp Alpha");
+        createCompany(recA, "Iso Corp Alpha");
         Long skillId = getOrCreateSkill("Ruby", "ruby");
         Long jobA = createAndPublishJob(recA, "Ruby Developer", List.of(skillId));
 
         RecruiterAuth recB = registerRecruiter("rec.iso.b_" + UUID.randomUUID() + "@example.com");
-        Long compB = createCompany(recB, "Iso Corp Beta");
+        createCompany(recB, "Iso Corp Beta");
         Long jobB = createAndPublishJob(recB, "Ruby Architect", List.of(skillId));
 
         // Recruiter A cannot view Recruiter B's job via recruiter endpoints
@@ -1261,7 +1260,7 @@ public class Phase8ComprehensiveWorkflowIntegrationTest {
     @DisplayName("P8.5 Section 17: Soft-Deleted Job Excluded From Discovery and Recruiter Listing")
     void test14_softDeletedJobWorkflow() throws Exception {
         RecruiterAuth rec = registerRecruiter("rec.p85.del_" + UUID.randomUUID() + "@example.com");
-        Long compId = createCompany(rec, "Deletable Jobs Inc");
+        createCompany(rec, "Deletable Jobs Inc");
         Long skillId = getOrCreateSkill("Scala", "scala");
 
         // Create DRAFT job (zero applications)

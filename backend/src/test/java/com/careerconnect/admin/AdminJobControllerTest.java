@@ -122,10 +122,10 @@ class AdminJobControllerTest {
         long comp1 = insertCompany("Google");
         long comp2 = insertCompany("Microsoft");
 
-        long j1 = insertJob(comp1, "Staff Software Engineer", JobStatus.ACTIVE, null);
-        long j2 = insertJob(comp2, "Principal Architect", JobStatus.ACTIVE, null);
-        long j3 = insertJob(comp1, "Archived Job Role", JobStatus.ARCHIVED, null);
-        long jDeleted = insertJob(comp2, "Deleted Job Role", JobStatus.ACTIVE, LocalDate.now()); // soft-deleted
+        insertJob(comp1, "Staff Software Engineer", JobStatus.ACTIVE, null);
+        insertJob(comp2, "Principal Architect", JobStatus.ACTIVE, null);
+        insertJob(comp1, "Archived Job Role", JobStatus.ARCHIVED, null);
+        insertJob(comp2, "Deleted Job Role", JobStatus.ACTIVE, LocalDate.now()); // soft-deleted
 
         mockMvc.perform(get("/api/admin/jobs")
                         .header(HttpHeaders.AUTHORIZATION, "Bearer " + adminToken)

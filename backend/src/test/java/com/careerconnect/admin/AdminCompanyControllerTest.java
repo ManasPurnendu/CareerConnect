@@ -117,9 +117,9 @@ class AdminCompanyControllerTest {
     @Test
     @DisplayName("Admin can list companies with pagination and counts")
     void adminCanListCompanies_withPaginationAndCounts() throws Exception {
-        long c1 = insertCompany("Alpha Technologies", true, "alpha.com");
-        long c2 = insertCompany("Beta Systems", true, "beta.com");
-        long c3 = insertCompany("Gamma Solutions", false, "gamma.com");
+        insertCompany("Alpha Technologies", true, "alpha.com");
+        insertCompany("Beta Systems", true, "beta.com");
+        insertCompany("Gamma Solutions", false, "gamma.com");
 
         mockMvc.perform(get("/api/admin/companies")
                         .header(HttpHeaders.AUTHORIZATION, "Bearer " + adminToken)

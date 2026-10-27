@@ -2,7 +2,6 @@ package com.careerconnect.admin;
 
 import com.careerconnect.common.model.Role;
 import com.careerconnect.common.util.JdbcUtils;
-import com.careerconnect.jobs.model.JobStatus;
 import com.careerconnect.security.JwtService;
 import com.careerconnect.security.SecurityUser;
 import org.junit.jupiter.api.AfterEach;
@@ -26,12 +25,9 @@ import java.sql.PreparedStatement;
 import java.sql.Statement;
 import java.time.LocalDate;
 
-import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.hasSize;
-import static org.hamcrest.Matchers.not;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
