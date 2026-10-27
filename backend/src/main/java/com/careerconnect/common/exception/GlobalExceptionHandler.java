@@ -54,8 +54,9 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(MethodArgumentTypeMismatchException.class)
     public ResponseEntity<ApiErrorResponse> handleTypeMismatch(MethodArgumentTypeMismatchException ex) {
-        String message = String.format("Parameter '%s' should be of type %s",
-                ex.getName(), ex.getRequiredType() != null ? ex.getRequiredType().getSimpleName() : "valid");
+        Class<?> requiredType = ex.getRequiredType();
+        String typeName = requiredType != null ? requiredType.getSimpleName() : "valid";
+        String message = String.format("Parameter '%s' should be of type %s", ex.getName(), typeName);
         log.warn("Parameter type mismatch: {}", message);
         ApiErrorResponse error = ApiErrorResponse.of(message, ErrorCode.VALIDATION_FAILED.getCode());
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
