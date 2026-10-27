@@ -28,9 +28,7 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.hasSize;
-import static org.hamcrest.Matchers.is;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -263,21 +261,20 @@ class RecruiterJobQueryControllerTest {
         associateRecruiterWithCompany(recB.recruiterId(), compB);
 
         // Company A jobs
-        Long jobA1 = createJob(compA, "Alpha Job 1", "Desc", JobStatus.DRAFT, LocalDate.now().plusDays(10), "REMOTE", null, null, null, List.of("Java"));
-        Long jobA2 = createJob(compA, "Alpha Job 2", "Desc", JobStatus.ACTIVE, LocalDate.now().plusDays(20), "REMOTE", null, null, null, List.of("Spring"));
+        createJob(compA, "Alpha Job 1", "Desc", JobStatus.DRAFT, LocalDate.now().plusDays(10), "REMOTE", null, null, null, List.of("Java"));
+        createJob(compA, "Alpha Job 2", "Desc", JobStatus.ACTIVE, LocalDate.now().plusDays(20), "REMOTE", null, null, null, List.of("Spring"));
 
         // Company B jobs
         Long jobB1 = createJob(compB, "Beta Job 1", "Desc", JobStatus.ACTIVE, LocalDate.now().plusDays(15), "REMOTE", null, null, null, List.of("React"));
 
         // Recruiter A lists jobs -> only Alpha jobs
-        MvcResult res = mockMvc.perform(get("/api/recruiter/jobs")
+        mockMvc.perform(get("/api/recruiter/jobs")
                         .header("Authorization", "Bearer " + recA.token()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data", hasSize(2)))
                 .andExpect(jsonPath("$.data[0].company.id").value(compA))
                 .andExpect(jsonPath("$.data[1].company.id").value(compA))
-                .andExpect(jsonPath("$.pagination.totalElements").value(2))
-                .andReturn();
+                .andExpect(jsonPath("$.pagination.totalElements").value(2));
 
         // Recruiter B lists jobs -> only Beta jobs
         mockMvc.perform(get("/api/recruiter/jobs")
@@ -317,7 +314,7 @@ class RecruiterJobQueryControllerTest {
         associateRecruiterWithCompany(recA.recruiterId(), compA);
 
         Long compB = createCompany("Company Target");
-        Long jobB = createJob(compB, "Target Job", "Desc", JobStatus.ACTIVE, LocalDate.now().plusDays(10), "REMOTE", null, null, null, List.of("Java"));
+        createJob(compB, "Target Job", "Desc", JobStatus.ACTIVE, LocalDate.now().plusDays(10), "REMOTE", null, null, null, List.of("Java"));
 
         // Recruiter A tries to list Company B jobs by passing ?companyId=compB
         mockMvc.perform(get("/api/recruiter/jobs?companyId=" + compB)
@@ -474,7 +471,7 @@ class RecruiterJobQueryControllerTest {
         associateRecruiterWithCompany(rec.recruiterId(), comp);
 
         Long draftJob = createJob(comp, "Draft One", "Desc", JobStatus.DRAFT, LocalDate.now().plusDays(10), "REMOTE", null, null, null, List.of("Java"));
-        Long activeJob = createJob(comp, "Active One", "Desc", JobStatus.ACTIVE, LocalDate.now().plusDays(10), "REMOTE", null, null, null, List.of("Java"));
+        createJob(comp, "Active One", "Desc", JobStatus.ACTIVE, LocalDate.now().plusDays(10), "REMOTE", null, null, null, List.of("Java"));
         Long closedJob = createJob(comp, "Closed One", "Desc", JobStatus.CLOSED, LocalDate.now().plusDays(10), "REMOTE", null, null, null, List.of("Java"));
 
         // All 3 appear in recruiter listing (unlike public listing which only shows active)

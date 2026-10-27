@@ -9,7 +9,6 @@ import com.careerconnect.company.dto.RecruiterCompanyUpsertRequest;
 import com.careerconnect.jobs.dto.RecruiterJobCreateRequest;
 import com.careerconnect.jobs.dto.RecruiterJobUpdateRequest;
 import com.careerconnect.jobs.model.ExperienceLevel;
-import com.careerconnect.jobs.model.JobStatus;
 import com.careerconnect.jobs.model.JobType;
 import com.careerconnect.jobs.model.WorkMode;
 import com.careerconnect.security.JwtService;

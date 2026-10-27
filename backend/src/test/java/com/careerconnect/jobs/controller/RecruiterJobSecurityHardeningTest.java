@@ -360,8 +360,8 @@ class RecruiterJobSecurityHardeningTest {
         associateRecruiterWithCompany(recB, compB);
 
         Long skillId = getOrCreateSkill("Java");
-        Long jobA1 = createJob(compA, "Job A1", "Desc A1", JobStatus.ACTIVE, LocalDate.now().plusDays(20), "HYBRID", "Bangalore", new BigDecimal("10"), new BigDecimal("15"), List.of(skillId));
-        Long jobA2 = createJob(compA, "Job A2", "Desc A2", JobStatus.DRAFT, LocalDate.now().plusDays(30), "REMOTE", "Remote", new BigDecimal("12"), new BigDecimal("18"), List.of(skillId));
+        createJob(compA, "Job A1", "Desc A1", JobStatus.ACTIVE, LocalDate.now().plusDays(20), "HYBRID", "Bangalore", new BigDecimal("10"), new BigDecimal("15"), List.of(skillId));
+        createJob(compA, "Job A2", "Desc A2", JobStatus.DRAFT, LocalDate.now().plusDays(30), "REMOTE", "Remote", new BigDecimal("12"), new BigDecimal("18"), List.of(skillId));
 
         Long jobB1 = createJob(compB, "Job B1", "Desc B1", JobStatus.ACTIVE, LocalDate.now().plusDays(15), "ONSITE", "Hyderabad", new BigDecimal("8"), new BigDecimal("12"), List.of(skillId));
 
@@ -696,11 +696,11 @@ class RecruiterJobSecurityHardeningTest {
         associateRecruiterWithCompany(recId, compA);
 
         Long skillId = getOrCreateSkill("Java");
-        Long jobA = createJob(compA, "Job Company A", "Desc A", JobStatus.ACTIVE, LocalDate.now().plusDays(20), "REMOTE", "Remote", new BigDecimal("10"), new BigDecimal("15"), List.of(skillId));
+        createJob(compA, "Job Company A", "Desc A", JobStatus.ACTIVE, LocalDate.now().plusDays(20), "REMOTE", "Remote", new BigDecimal("10"), new BigDecimal("15"), List.of(skillId));
 
         // Step 2: Database recruiter.company_id changes to Company B
         Long compB = createCompany("Company Beta Reassign");
-        Long jobB = createJob(compB, "Job Company B", "Desc B", JobStatus.ACTIVE, LocalDate.now().plusDays(20), "REMOTE", "Remote", new BigDecimal("12"), new BigDecimal("18"), List.of(skillId));
+        createJob(compB, "Job Company B", "Desc B", JobStatus.ACTIVE, LocalDate.now().plusDays(20), "REMOTE", "Remote", new BigDecimal("12"), new BigDecimal("18"), List.of(skillId));
         associateRecruiterWithCompany(recId, compB);
 
         // Step 3: Recruiter calls job listing using the OLD token
